@@ -1,1 +1,1 @@
-You will need the following Javascript librairies : vis.js, jquery, bootstrap and 
+You will need the following Javascript librairies : vis.js, jquery, and boostrap. The paths to modify are at the beginning of the html file.
