@@ -15,7 +15,7 @@ from vgg16bn import Vgg16BN
 PATH = "../../data/interim/"
 MODELS = "../../models/"
 LABELS = "../../data/external/labels/"
-ANNOS = "../../../../../FisheriesMonitoring/data/fish/annos/"
+ANNOS = "../../data/external/annos/"
 
 # batch of images 
 batch_size=64
@@ -143,3 +143,20 @@ model.fit(conv_feat, [trn_bbox, trn_labels], batch_size=batch_size, nb_epoch=10,
 
 print("--- Optimization  %s seconds ---" % (time.time() - start_time))
 model.save_weights(MODELS+'bn_anno.h5')
+
+# Prediction 
+preds = model.predict(conv_test_feat, batch_size=batch_size)
+
+boundinboxtest = preds[0]
+bbtest = pd.DataFrame(boundinboxtest)
+bbtest.insert(0, 'image', raw_test_filenames)
+bbtest.to_csv(MODELS + 'bbox.csv', index=False)
+
+#save_array(MODELS + 'bbox.dat', boundinboxtest)
+
+subm = preds[1]
+# classes = sorted(batches.class_indices, key=batches.class_indices.get)
+classes = ['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT']
+submission = pd.DataFrame(subm, columns=classes)
+submission.insert(0, 'image', raw_test_filenames)
+submission.to_csv(MODELS + 'classes.csv', index=False)
