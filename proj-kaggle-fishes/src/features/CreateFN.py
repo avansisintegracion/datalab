@@ -132,6 +132,12 @@ model = Model([inp], [x_bb, x_class])
 model.compile(Adam(lr=0.001), loss=['mse', 'categorical_crossentropy'], metrics=['accuracy'],
              loss_weights=[.001, 1.])
 
+# to test
+#model.compile(Adam(lr=0.001), loss=['mse', 'categorical_crossentropy'], metrics=['accuracy'],
+#             loss_weights=[.001, 1.], callbacks=[early_stop])
+#callbacks=[csv_logger]
+#keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=0, verbose=0, mode='auto')
+
 model.fit(conv_feat, [trn_bbox, trn_labels], batch_size=batch_size, nb_epoch=3, 
              validation_data=(conv_val_feat, [val_bbox, val_labels]))
 
