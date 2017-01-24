@@ -49,20 +49,20 @@ labels = np.array(labels)
 
 # Load data with the split taking into account boat_group
 df_80 = pickle.load(open('../../data/processed/df_80.txt', 'rb'))
-df_20 = pickle.load(open('../../data/processed/df_20.txt', 'rb'))
+# df_20 = pickle.load(open('../../data/processed/df_20.txt', 'rb'))
 
 print('Subsample training images into sub-train and sub-test')
 X_train = []
 y_train = []
-X_test = []
-y_test = []
+X_val = []
+y_val = []
 for row in range(0, len(features)):
     if any(df_80['img_file'] == filenames[row]):
         X_train.append(features[row])
         y_train.append(labels[row])
     else:
-        X_test.append(features[row])
-        y_test.append(labels[row])
+        X_val.append(features[row])
+        y_val.append(labels[row])
 
 X_train = np.array(X_train)
 X_test = np.array(X_test)

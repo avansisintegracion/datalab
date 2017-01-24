@@ -36,7 +36,7 @@ def load_train():
     for fld in folders:
         index = folders.index(fld)
         print('Load folder {} (Index: {})'.format(fld, index))
-        path = os.path.join('..', '..', 'data', 'train', fld, '*.jpg')
+        path = os.path.join('..', '..', 'data', 'raw', 'train', fld, '*.jpg')
         files = glob.glob(path)
         for fl in files:
             img = get_im_cv2(fl)
@@ -92,6 +92,9 @@ df = pd.DataFrame({'img_file': train_id,
                    'boat_group': predicted_labels,
                    'labels': train_y})
 
+
+with open('../../data/processed/df.txt', 'wb') as file:
+    pickle.dump(df, file)
 
 for cat in range(0, 8):
     tmp = df.loc[df['labels'] == cat]
