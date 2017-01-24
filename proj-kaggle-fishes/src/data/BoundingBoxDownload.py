@@ -1,22 +1,12 @@
-# One has pubished in the forums the bounding box of the fishes
+# Bounding box labels of the fishes has pubished in the forums
 # https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring/forums/t/25902/complete-bounding-box-annotation
 
 import os
 import urllib2
 
-LABELS_DIR = '../../data/external/labels/'
-# Labels are not complete, annos instead have the figure for all the fish in train set
 ANNOS_DIR = '../../data/external/annos/'
 
-# Links to labels produced by Nathaniel Shimoni, thanks for the great work!
-LABELS_LINKS = [
-    'https://www.kaggle.com/blobs/download/forum-message-attachment-files/5373/yft_labels.json',
-    'https://www.kaggle.com/blobs/download/forum-message-attachment-files/5374/shark_labels.json',
-    'https://www.kaggle.com/blobs/download/forum-message-attachment-files/5375/lag_labels.json',
-    'https://www.kaggle.com/blobs/download/forum-message-attachment-files/5376/dol_labels.json',
-    'https://www.kaggle.com/blobs/download/forum-message-attachment-files/5377/bet_labels.json',
-    'https://www.kaggle.com/blobs/download/forum-message-attachment-files/5378/alb_labels.json',
-]
+# Label of shark and yft have a different labeling 
 
 ANNOS_LINKS = [
         'https://www.kaggle.com/blobs/download/forum-message-attachment-files/5458/bet_labels.json',
@@ -38,5 +28,4 @@ def download_labels(fichier, httplink):
             local_file.write(f.read())
 
 if __name__ == '__main__':
-    download_labels(LABELS_DIR, LABELS_LINKS)
     download_labels(ANNOS_DIR, ANNOS_LINKS)
