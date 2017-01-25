@@ -23,20 +23,20 @@ INTERIM = '../../data/interim'
 PROCESSED = '../../data/processed'
 
 
-def open_dump(textfile):
-    return pickle.load(open(os.path.join(INTERIM, textfile), 'rb'))
+def open_dump(path, textfile):
+    return pickle.load(open(os.path.join(path, textfile), 'rb'))
 
 
 class TestClassifications(object):
     '''Classification optimization'''
     def __init__(self):
         try:
-            self.ifeatures = open_dump('ifeatures.txt')
-            # self.sfeatures = open_dump('sfeatures.txt')
-            self.labels = open_dump('labels.txt')
-            self.filenames = open_dump('filenames.txt')
+            self.ifeatures = open_dump(INTERIM, 'ifeatures.txt')
+            # self.sfeatures = open_dump(INTERIM, 'sfeatures.txt')
+            self.labels = open_dump(INTERIM, 'labels.txt')
+            self.filenames = open_dump(INTERIM, 'filenames.txt')
             # self.allfeatures = np.hstack([self.sfeatures, self.ifeatures])
-            self.df_80 = open_dump('df_80.txt')
+            self.df_80 = open_dump(PROCESSED, 'df_80.txt')
             self.features = self.ifeatures
         except:
             print('An error occured during loading of data')
