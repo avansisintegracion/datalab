@@ -10,7 +10,6 @@ ANNOS_DIR = '../../data/external/annos/'
 OUTPUT_DIR = '../../data/interim/train/crop/train/'
 TRAIN_DIR = '../../data/raw/train/'
 
-
 def process_annos(label_file):
     file_name = os.path.basename(label_file)
     class_name = file_name.split("_")[0]
