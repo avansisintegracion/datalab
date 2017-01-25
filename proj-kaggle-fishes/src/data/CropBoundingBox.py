@@ -83,14 +83,14 @@ def separate_val():
             fromname='../../data/interim/train/crop/train/' + classes 
             toname='../../data/interim/train/crop/val/'+ classes 
             if not os.path.isdir(toname):
-                os.mkdir(toname)
+                os.makedirs(toname)
 
             os.rename(fromname + '/' + basename,toname + '/' + basename)
 
 
 if __name__ == '__main__':
     if not os.path.isdir(OUTPUT_DIR):
-        os.mkdir(OUTPUT_DIR)
+        os.makedirs(OUTPUT_DIR)
     make_cropped_dataset()
     copy_nofish()
     separate_val()

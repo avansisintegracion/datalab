@@ -1,0 +1,4 @@
+data/external/*
+data/interim/*
+data/raw/*
+models/*

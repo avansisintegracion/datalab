@@ -5,33 +5,40 @@ import numpy as np
 
 RAW_DIR = '../../data/raw/'
 INT_DIR = '../../data/interim/'
+DEVCROP_DIR = INT_DIR + 'train/devcrop/'
 
-# Creation 
-if not os.path.isdir(INT_DIR + 'train'):
-    shutil.copytree(RAW_DIR + 'train', INT_DIR + 'train')
+# Creation DevCrop
+if not os.path.isdir(DEVCROP_DIR):
+    os.makedirs(DEVCROP_DIR)
+
+# Create train
+if not os.path.isdir(DEVCROP_DIR + 'train'):
+    shutil.copytree(RAW_DIR + 'train', DEVCROP_DIR + 'train')
 else: 
-    print('Already existing ' + INT_DIR + 'train')
-    shutil.rmtree(INT_DIR + 'train')
-    shutil.copytree(RAW_DIR + 'train', INT_DIR + 'train')
+    print('Rewriting existing ' + DEVCROP_DIR + 'train')
+    shutil.rmtree(DEVCROP_DIR + 'train')
+    shutil.copytree(RAW_DIR + 'train', DEVCROP_DIR + 'train')
 
-if not os.path.isdir(INT_DIR + 'valid'):
-    os.mkdir(INT_DIR + 'valid')
+# Create valid
+if not os.path.isdir(DEVCROP_DIR + 'valid'):
+    os.mkdir(DEVCROP_DIR + 'valid')
 else: 
-    print("Already existing " + INT_DIR + 'valid')
-    shutil.rmtree(INT_DIR + 'valid')
-    os.mkdir(INT_DIR + 'valid')
+    print("Rewriting existing " + DEVCROP_DIR + 'valid')
+    shutil.rmtree(DEVCROP_DIR + 'valid')
+    os.mkdir(DEVCROP_DIR + 'valid')
 
-if not os.path.isdir(INT_DIR + 'test'):
-    os.mkdir(INT_DIR + 'test')
-    shutil.copytree(RAW_DIR + 'test', INT_DIR + 'test/category')
-else: print("Already existing " + INT_DIR + 'test')
+# Create test
+if not os.path.isdir(DEVCROP_DIR + 'test'):
+    os.mkdir(DEVCROP_DIR + 'test')
+    shutil.copytree(RAW_DIR + 'test', DEVCROP_DIR + 'test/category')
+else: print("Already existing " + DEVCROP_DIR + 'test')
 
-os.chdir(INT_DIR + 'train')
+os.chdir(DEVCROP_DIR + 'train')
 g = glob('*')
 for d in g: 
-    if not os.path.isdir('../../interim/valid/'+d):
-        os.mkdir('../../interim/valid/'+d)
-        print('../../interim/valid/'+d)
+    if not os.path.isdir('../valid/'+d):
+        os.mkdir('../valid/'+d)
+        print('../valid/'+d)
     else: print("Existing valid/"+d)
 
 g = glob('*/*.jpg')

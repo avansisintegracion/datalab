@@ -12,9 +12,10 @@ from utils import *
 # generally not worth the very minor improvement in accuracy.
 from vgg16bn import Vgg16BN
 
-PATH = "../../data/interim/"
+
+PATH = "../../data/interim/train/devcrop/" 
 MODELS = "../../models/"
-LABELS = "../../data/external/labels/"
+PROCESSED = "../../data/processed/"
 ANNOS = "../../data/external/annos/"
 
 # batch of images 
@@ -69,12 +70,13 @@ for c in anno_classes:
 
 # Get python raw filenames
 raw_filenames = [f.split('/')[-1] for f in filenames]
-raw_test_filenames = [f.split('/')[-1] for f in test_filenames]
 raw_val_filenames = [f.split('/')[-1] for f in val_filenames]
+raw_test_filenames = [f.split('/')[-1] for f in test_filenames]
 
 # Get file index
 file2idx = {o:i for i,o in enumerate(raw_filenames)}
 val_file2idx = {o:i for i,o in enumerate(raw_val_filenames)}
+test_file2idx = {o:i for i,o in enumerate(raw_test_filenames)}
 
 # Image that have no annotation, empty bounding box
 empty_bbox = {'height': 0., 'width': 0., 'x': 0., 'y': 0.}
@@ -83,11 +85,13 @@ for f in raw_filenames:
     if not f in bb_json.keys(): bb_json[f] = empty_bbox
 for f in raw_val_filenames:
     if not f in bb_json.keys(): bb_json[f] = empty_bbox
+for f in raw_test_filenames:
+    if not f in bb_json.keys(): bb_json[f] = empty_bbox
  
-           
 # The sizes of images can be related to ship sizes. Get sizes for raw image
 sizes = [PIL.Image.open(PATH+'train/'+f).size for f in filenames]
 raw_val_sizes = [PIL.Image.open(PATH+'valid/'+f).size for f in val_filenames]
+raw_test_sizes = [PIL.Image.open(PATH+'test/'+f).size for f in test_filenames]
 
 # Convert dictionary into array
 bb_params = ['height', 'width', 'x', 'y']
@@ -113,14 +117,17 @@ p=0.6
 inp = Input(conv_layers[-1].output_shape[1:])
 x = MaxPooling2D()(inp)
 x = BatchNormalization(axis=1)(x)
-x = Dropout(p/4)(x)
+x = Dropout(p)(x)
+#x = Dropout(p/4)(x)
 x = Flatten()(x)
 x = Dense(512, activation='relu')(x)
 x = BatchNormalization()(x)
-x = Dropout(p)(x)
+#x = Dropout(p)(x)
+x = Dropout(p/2)(x)
 x = Dense(512, activation='relu')(x)
 x = BatchNormalization()(x)
-x = Dropout(p/2)(x)
+#x = Dropout(p/2)(x)
+x = Dropout(p/4)(x)
 x_bb = Dense(4, name='bb')(x)
 x_class = Dense(8, activation='softmax', name='class')(x)
 
@@ -128,15 +135,10 @@ x_class = Dense(8, activation='softmax', name='class')(x)
 # and we also need to say what loss function to use for each. We also weight 
 # the bounding box loss function down by 1000x since the scale of the cross-entropy loss 
 # and the MSE is very different.
+
 model = Model([inp], [x_bb, x_class])
 model.compile(Adam(lr=0.001), loss=['mse', 'categorical_crossentropy'], metrics=['accuracy'],
              loss_weights=[.001, 1.])
-
-# to test
-#model.compile(Adam(lr=0.001), loss=['mse', 'categorical_crossentropy'], metrics=['accuracy'],
-#             loss_weights=[.001, 1.], callbacks=[early_stop])
-#callbacks=[csv_logger]
-#keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0, patience=0, verbose=0, mode='auto')
 
 model.fit(conv_feat, [trn_bbox, trn_labels], batch_size=batch_size, nb_epoch=3, 
              validation_data=(conv_val_feat, [val_bbox, val_labels]))
@@ -153,16 +155,27 @@ model.save_weights(MODELS+'bn_anno.h5')
 # Prediction 
 preds = model.predict(conv_test_feat, batch_size=batch_size)
 
-boundinboxtest = preds[0]
-bbtest = pd.DataFrame(boundinboxtest)
-bbtest.insert(0, 'image', raw_test_filenames)
-bbtest.to_csv(MODELS + 'bbox.csv', index=False)
+boundingboxtest = np.c_[raw_test_filenames, preds[0], raw_test_sizes]
+# Restore size of bouding box
+# bb[img, 'height', 'width', 'x', 'y', 'raw width', 'raw height']
+def restore_box(i,bb):
+    conv_x = (224. / float(bb[5]))
+    conv_y = (224. / float(bb[6]))
+    bb[1] = float(bb[1])/conv_y
+    bb[2] = float(bb[2])/conv_x
+    bb[3] = max(float(bb[3])/conv_x, 0)
+    bb[4] = max(float(bb[4])/conv_y, 0)
+    return(bb)
 
-#save_array(MODELS + 'bbox.dat', boundinboxtest)
+bb_test_restore = np.stack([restore_box(i, bb) for i,bb in enumerate(boundingboxtest) ])
+
+# Restore bbox on test
+bbtest = pd.DataFrame(bb_test_restore)
+bbtest.to_csv(PROCESSED + 'bbox.csv', index=False)
 
 subm = preds[1]
 # classes = sorted(batches.class_indices, key=batches.class_indices.get)
 classes = ['ALB', 'BET', 'DOL', 'LAG', 'NoF', 'OTHER', 'SHARK', 'YFT']
 submission = pd.DataFrame(subm, columns=classes)
 submission.insert(0, 'image', raw_test_filenames)
-submission.to_csv(MODELS + 'classes.csv', index=False)
+submission.to_csv(PROCESSED + 'classes.csv', index=False)
