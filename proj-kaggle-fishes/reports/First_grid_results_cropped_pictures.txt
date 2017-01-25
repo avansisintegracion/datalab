@@ -1,0 +1,127 @@
+Performing classification with LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
+          intercept_scaling=1, max_iter=100, multi_class='ovr', n_jobs=1,
+          penalty='l2', random_state=None, solver='liblinear', tol=0.0001,
+          verbose=0, warm_start=False)...
+GridSearchCV took 30.40 seconds for 7 candidate parameter settings.
+Model with rank: 1
+Mean validation score: -0.482 (std: 0.026)
+Parameters: {'classifier__C': 10.0}
+
+Model with rank: 2
+Mean validation score: -0.502 (std: 0.009)
+Parameters: {'classifier__C': 1.0}
+
+Model with rank: 3
+Mean validation score: -0.526 (std: 0.063)
+Parameters: {'classifier__C': 100.0}
+
+Used :LogisticRegression(C=10, class_weight=None, dual=False, fit_intercept=True,
+          intercept_scaling=1, max_iter=100, multi_class='ovr', n_jobs=1,
+          penalty='l2', random_state=None, solver='liblinear', tol=0.0001,
+          verbose=0, warm_start=False)
+Logloss score on validation set : 2.68207466924
+Confusion matrix, without normalization
+[[368   1   1   0   3  30   0   5]
+ [ 26   1   2   0   0  11   0  18]
+ [  0   6   1   0   2  22   0   0]
+ [ 26   0   0   0   0   1   0   0]
+ [  1   0   0   0   0   0   0  27]
+ [ 55  28   2   4   5  57   0  24]
+ [  0   0   0   0   0   0   3  52]
+ [ 16  40   0   0   0  26   3  57]]
+
+Performing classification with RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gini',
+            max_depth=None, max_features='auto', max_leaf_nodes=None,
+            min_impurity_split=1e-07, min_samples_leaf=1,
+            min_samples_split=2, min_weight_fraction_leaf=0.0,
+            n_estimators=10, n_jobs=1, oob_score=False, random_state=None,
+            verbose=0, warm_start=False)...
+GridSearchCV took 19.00 seconds for 5 candidate parameter settings.
+Model with rank: 1
+Mean validation score: -0.304 (std: 0.038)
+Parameters: {'classifier__n_estimators': 90}
+
+Model with rank: 2
+Mean validation score: -0.316 (std: 0.077)
+Parameters: {'classifier__n_estimators': 70}
+
+Model with rank: 3
+Mean validation score: -0.338 (std: 0.073)
+Parameters: {'classifier__n_estimators': 50}
+
+Used :RandomForestClassifier(bootstrap=True, class_weight=None, criterion='gini',
+            max_depth=None, max_features='auto', max_leaf_nodes=None,
+            min_impurity_split=1e-07, min_samples_leaf=1,
+            min_samples_split=2, min_weight_fraction_leaf=0.0,
+            n_estimators=50, n_jobs=1, oob_score=False, random_state=None,
+            verbose=0, warm_start=False)
+Logloss score on validation set : 2.7662413619
+Confusion matrix, without normalization
+[[403   0   0   0   0   2   0   3]
+ [ 50   0   0   0   0   6   0   2]
+ [  8   1   7   0   0  15   0   0]
+ [ 27   0   0   0   0   0   0   0]
+ [ 17   0   0   0   0   0   0  11]
+ [109   4   4   0   0  42   0  16]
+ [  0   0   0   0   0   0   0  55]
+ [ 57   0   0   0   0   6   0  79]]
+
+Performing classification with MultinomialNB(alpha=1.0, class_prior=None, fit_prior=True)...
+GridSearchCV took 0.45 seconds for 7 candidate parameter settings.
+Model with rank: 1
+Mean validation score: -1.561 (std: 0.142)
+Parameters: {'classifier__alpha': 0.0001}
+
+Model with rank: 2
+Mean validation score: -1.572 (std: 0.139)
+Parameters: {'classifier__alpha': 0.001}
+
+Model with rank: 3
+Mean validation score: -1.588 (std: 0.136)
+Parameters: {'classifier__alpha': 0.01}
+
+Used :MultinomialNB(alpha=0.01, class_prior=None, fit_prior=True)
+Logloss score on validation set : 1.71530733578
+Confusion matrix, without normalization
+[[396   1   0   0   0   7   0   4]
+ [ 50   0   0   0   0   0   0   8]
+ [  5   0   0   0   0  22   0   4]
+ [ 27   0   0   0   0   0   0   0]
+ [ 28   0   0   0   0   0   0   0]
+ [120   2   0   0   0  30   0  23]
+ [  0   0   0   0   0   0   0  55]
+ [ 33  21   0   0   0   0   1  87]]
+
+ Performing classification with XGBClassifier(base_score=0.5, colsample_bylevel=1, colsample_bytree=1,
+       gamma=0, learning_rate=0.1, max_delta_step=0, max_depth=3,
+       min_child_weight=1, missing=None, n_estimators=100, nthread=-1,
+       objective='binary:logistic', reg_alpha=0, reg_lambda=1,
+       scale_pos_weight=1, seed=0, silent=True, subsample=1)...
+GridSearchCV took 289.27 seconds for 12 candidate parameter settings.
+Model with rank: 1
+Mean validation score: -0.180 (std: 0.031)
+Parameters: {'classifier__min_child_weight': 1, 'classifier__max_depth': 7}
+
+Model with rank: 2
+Mean validation score: -0.181 (std: 0.033)
+Parameters: {'classifier__min_child_weight': 1, 'classifier__max_depth': 9}
+
+Model with rank: 3
+Mean validation score: -0.185 (std: 0.035)
+Parameters: {'classifier__min_child_weight': 3, 'classifier__max_depth': 9}
+
+Used :XGBClassifier(base_score=0.5, colsample_bylevel=1, colsample_bytree=0.8,
+       gamma=0, learning_rate=0.1, max_delta_step=0, max_depth=7,
+       min_child_weight=1, missing=None, n_estimators=100, nthread=4,
+       objective='multi:softprob', reg_alpha=0, reg_lambda=1,
+       scale_pos_weight=1, seed=27, silent=True, subsample=0.8)
+Logloss score on validation set : 1.70491790313
+Confusion matrix, without normalization
+[[401   0   0   0   0   4   0   3]
+ [ 51   0   0   0   0   3   2   2]
+ [  5   0   1   0   0  25   0   0]
+ [ 27   0   0   0   0   0   0   0]
+ [ 16   0   0   0   0   1   0  11]
+ [ 95   4   0   0   0  57   0  19]
+ [  0   0   0   0   0   0   0  55]
+ [ 56   0   0   0   0   5   0  81]]
