@@ -32,12 +32,12 @@ class TestClassifications(object):
     def __init__(self):
         try:
             self.ifeatures = open_dump(INTERIM, 'ifeatures.txt')
-            # self.sfeatures = open_dump(INTERIM, 'sfeatures.txt')
+            self.sfeatures = open_dump(INTERIM, 'sfeatures.txt')
             self.labels = open_dump(INTERIM, 'labels.txt')
             self.filenames = open_dump(INTERIM, 'filenames.txt')
-            # self.allfeatures = np.hstack([self.sfeatures, self.ifeatures])
+            self.features = np.hstack([self.sfeatures, self.ifeatures])
             self.df_80 = open_dump(PROCESSED, 'df_80.txt')
-            self.features = self.ifeatures
+            # self.features = self.ifeatures
         except:
             print('An error occured during loading of data')
         self.X_train = []
@@ -103,7 +103,6 @@ class TestClassifications(object):
     def split_data(self):
         df_80_base = self.df_80['img_file'].apply(os.path.basename)
         for row in range(0, len(self.features)):
-            self.df_80['img_file']
             if any(df_80_base == os.path.basename(self.filenames[row])):
                 self.X_train.append(self.features[row])
                 self.y_train.append(self.labels[row])
@@ -137,91 +136,95 @@ class TestClassifications(object):
         return str(classifier), log_loss(y_true, y_pred), scaler_class.predict(self.X_val)
 
     def testAll(self):
-        ## LogisticRegression
-        C_range = 10.0 ** np.arange(-4, 3)
-        self.CustomGridSearch(preproc=StandardScaler(),
-                              classifier=LogisticRegression(),
-                              param_grid={'classifier__C': C_range}
-                              )
-        classifier = LogisticRegression(C=10)
-        results = self.RunOptClassif(preproc=StandardScaler(),
-                                     classifier=classifier)
-        print("Used :%s" % results[0])
-        print("Logloss score on validation set : %s" % results[1])
-        cnf_matrix = confusion_matrix(self.y_val, results[2])
-        np.set_printoptions(precision=2)
-        # Plot normalized confusion matrix
-        plt.figure()
-        self.plot_confusion_matrix(cnf_matrix,
-                                   classes=self.classes,
-                                   normalize=False,
-                                   title='Confusion matrix')
-        plt.savefig(os.path.join(INTERIM, 'LogisticReg_confusion_matrix.png'),
-                    bbox_inches='tight')
-        #######################################################################
-        ## RandomForest
-        N_range = [10, 30, 50, 70, 90]
-        self.CustomGridSearch(preproc=StandardScaler(),
-                              classifier=RandomForestClassifier(),
-                              param_grid={'classifier__n_estimators': N_range}
-                              )
-        classifier = RandomForestClassifier(n_estimators=50)
-        results = self.RunOptClassif(preproc=StandardScaler(),
-                                     classifier=classifier)
-        print("Used :%s" % results[0])
-        print("Logloss score on validation set : %s" % results[1])
-        cnf_matrix = confusion_matrix(self.y_val, results[2])
-        np.set_printoptions(precision=2)
-        # Plot normalized confusion matrix
-        plt.figure()
-        self.plot_confusion_matrix(cnf_matrix,
-                                   classes=self.classes,
-                                   normalize=False,
-                                   title='Confusion matrix')
-        plt.savefig(os.path.join(INTERIM, 'RandomForest_confusion_matrix.png'),
-                    bbox_inches='tight')
+        # ## LogisticRegression
+        # C_range = 10.0 ** np.arange(-4, 3)
+        # self.CustomGridSearch(preproc=StandardScaler(),
+        #                       classifier=LogisticRegression(),
+        #                       param_grid={'classifier__C': C_range}
+        #                       )
+        # classifier = LogisticRegression(C=10)
+        # results = self.RunOptClassif(preproc=StandardScaler(),
+        #                              classifier=classifier)
+        # print("Used :%s" % results[0])
+        # print("Logloss score on validation set : %s" % results[1])
+        # cnf_matrix = confusion_matrix(self.y_val, results[2])
+        # np.set_printoptions(precision=2)
+        # # Plot normalized confusion matrix
+        # plt.figure()
+        # self.plot_confusion_matrix(cnf_matrix,
+        #                            classes=self.classes,
+        #                            normalize=False,
+        #                            title='Confusion matrix')
+        # plt.savefig(os.path.join(INTERIM, 'LogisticReg_confusion_matrix.png'),
+        #             bbox_inches='tight')
+        # #######################################################################
+        # ## RandomForest
+        # N_range = [10, 30, 50, 70, 90]
+        # self.CustomGridSearch(preproc=StandardScaler(),
+        #                       classifier=RandomForestClassifier(),
+        #                       param_grid={'classifier__n_estimators': N_range}
+        #                       )
+        # classifier = RandomForestClassifier(n_estimators=50)
+        # results = self.RunOptClassif(preproc=StandardScaler(),
+        #                              classifier=classifier)
+        # print("Used :%s" % results[0])
+        # print("Logloss score on validation set : %s" % results[1])
+        # cnf_matrix = confusion_matrix(self.y_val, results[2])
+        # np.set_printoptions(precision=2)
+        # # Plot normalized confusion matrix
+        # plt.figure()
+        # self.plot_confusion_matrix(cnf_matrix,
+        #                            classes=self.classes,
+        #                            normalize=False,
+        #                            title='Confusion matrix')
+        # plt.savefig(os.path.join(INTERIM, 'RandomForest_confusion_matrix.png'),
+        #             bbox_inches='tight')
         #######################################################################
         ## Naive bayes
-        alpha = 10.0 ** np.arange(-4, 3)
-        self.CustomGridSearch(preproc=MinMaxScaler(),
-                              classifier=MultinomialNB(),
-                              param_grid={'classifier__alpha': alpha}
-                              )
-        classifier = MultinomialNB(alpha=0.01)
-        results = self.RunOptClassif(preproc=MinMaxScaler(),
-                                     classifier=classifier)
-        print("Used :%s" % results[0])
-        print("Logloss score on validation set : %s" % results[1])
-        cnf_matrix = confusion_matrix(self.y_val, results[2])
-        np.set_printoptions(precision=2)
-        # Plot normalized confusion matrix
-        plt.figure()
-        self.plot_confusion_matrix(cnf_matrix,
-                                   classes=self.classes,
-                                   normalize=False,
-                                   title='Confusion matrix')
-        plt.savefig(os.path.join(INTERIM, 'NaiveBayes_confusion_matrix.png'),
-                    bbox_inches='tight')
+        # alpha = 10.0 ** np.arange(-4, 3)
+        # self.CustomGridSearch(preproc=MinMaxScaler(),
+        #                       classifier=MultinomialNB(),
+        #                       param_grid={'classifier__alpha': alpha}
+        #                       )
+        # classifier = MultinomialNB(alpha=10)
+        # results = self.RunOptClassif(preproc=MinMaxScaler(),
+        #                              classifier=classifier)
+        # print("Used :%s" % results[0])
+        # print("Logloss score on validation set : %s" % results[1])
+        # cnf_matrix = confusion_matrix(self.y_val, results[2])
+        # np.set_printoptions(precision=2)
+        # # Plot normalized confusion matrix
+        # plt.figure()
+        # self.plot_confusion_matrix(cnf_matrix,
+        #                            classes=self.classes,
+        #                            normalize=False,
+        #                            title='Confusion matrix')
+        # plt.savefig(os.path.join(INTERIM, 'NaiveBayes_confusion_matrix.png'),
+        #             bbox_inches='tight')
         #######################################################################
         ## xgboost
-        param_test = {'classifier__max_depth': range(3, 10, 2),
-                      'classifier__min_child_weight': range(1, 6, 2)
-                      }
-        self.CustomGridSearch(preproc=StandardScaler(),
-                              classifier=xgb.XGBClassifier(),
-                              param_grid=param_test
-                              )
-        classifier = xgb.XGBClassifier(learning_rate=0.1,
+        # param_test = {'classifier__max_depth': range(3, 10, 2),
+        #               'classifier__min_child_weight': range(1, 6, 2)
+        #               }
+        # param_test = {'classifier__learning_rate': [0.001, 0.1, 0.7, 1],
+        #               'classifier__n_estimators': [10, 30, 70, 100, 150],
+        #               }
+        # self.CustomGridSearch(preproc=StandardScaler(),
+        #                       classifier=xgb.XGBClassifier(objective='multi:softmax'),
+        #                       param_grid=param_test
+        #                       )
+        classifier = xgb.XGBClassifier(learning_rate=0.05,
                                        n_estimators=100,
                                        max_depth=7,
                                        min_child_weight=1,
-                                       gamma=0,
-                                       subsample=0.8,
+                                       gamma=0.6,
+                                       reg_alpha=0.4,
+                                       subsample=0.6,
                                        colsample_bytree=0.8,
                                        objective='multi:softmax',
-                                       nthread=4,
+                                       nthread=6,
                                        scale_pos_weight=1,
-                                       seed=27)
+                                       seed=70)
         results = self.RunOptClassif(preproc=StandardScaler(),
                                      classifier=classifier)
         print("Used :%s" % results[0])
