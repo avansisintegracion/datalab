@@ -35,7 +35,8 @@ class TestClassifications(object):
             self.sfeatures = open_dump(INTERIM, 'sfeatures.txt')
             self.labels = open_dump(INTERIM, 'labels.txt')
             self.filenames = open_dump(INTERIM, 'filenames.txt')
-            self.features = np.hstack([self.sfeatures, self.ifeatures])
+            self.features = open_dump(INTERIM, 'kfeatures.txt')
+            # self.features = np.hstack([self.sfeatures, self.ifeatures])
             self.df_80 = open_dump(PROCESSED, 'df_80.txt')
             # self.features = self.ifeatures
         except:
@@ -203,9 +204,9 @@ class TestClassifications(object):
         #             bbox_inches='tight')
         #######################################################################
         ## xgboost
-        # param_test = {'classifier__max_depth': range(3, 10, 2),
-        #               'classifier__min_child_weight': range(1, 6, 2)
-        #               }
+        param_test = {'classifier__max_depth': range(3, 10, 2),
+                      'classifier__min_child_weight': range(1, 6, 2)
+                      }
         # param_test = {'classifier__learning_rate': [0.001, 0.1, 0.7, 1],
         #               'classifier__n_estimators': [10, 30, 70, 100, 150],
         #               }

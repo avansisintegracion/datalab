@@ -22,25 +22,15 @@ INTERIM = '../../data/interim'
 class GetFeatures(object):
     '''Feature extraction and image preprocessing'''
     def __init__(self):
-        self.basedir = op.join(INTERIM, 'train', 'crop')
-        self.testdir = op.join(INTERIM, 'train', 'crop', 'test_stg1')
-        self.classes = ['ALB',
-                        'BET',
-                        'DOL',
-                        'LAG',
-                        'SHARK',
-                        'YFT',
-                        'OTHER',
-                        'NoF'
-                        ]
-        self.ifeatures = []
-        self.labels = []
-        self.filenames = []
-        self.subsample = []
-        self.sfeatures = []
-        self.alldescriptors = []
-        self.keras_features = []
-        self.kfeatures = []
+        self.testdir = op.join(INTERIM, 'test', 'crop')
+        self.tifeatures = []
+        self.tlabels = []
+        self.tfilenames = []
+        self.tsubsample = []
+        self.tsfeatures = []
+        self.talldescriptors = []
+        self.tkeras_features = []
+        self.tkfeatures = []
 
     def chist(self, im):
         '''Compute color histogram of input image
@@ -80,52 +70,40 @@ class GetFeatures(object):
         return np.concatenate([mh.features.haralick(img).ravel(),
                                self.chist(im)])
 
-    def images(self):
-        '''Iterate over all (image,label) pairs'''
-        for ci, cl in enumerate(self.classes):
-            for fol in ['train', 'val']:
-                images = glob('{}/{}/{}/*.jpg'.format(self.basedir, fol, cl))
-                for im in sorted(images):
-                    yield im, ci, str(im.split('/')[-3])
-
     def images_test(self):
         '''Iterate over all image'''
         for im in glob('{}/*.jpg'.format(self.testdir)):
             name = os.path.basename(im)
             yield im, name
 
-
     def wholeImage(self):
         print('Computing whole-image texture features...')
-        for im, ell, sub in self.images():
-            self.ifeatures.append(self.features_for(im))
-            self.labels.append(ell)
-            self.filenames.append(im)
-            self.subsample.append(sub)
+        for im, name in self.images_test():
+            self.tifeatures.append(self.features_for(im))
+            self.tfilenames.append(name)
 
-        self.ifeatures = np.array(self.ifeatures)
-        self.labels = np.array(self.labels)
+        self.tifeatures = np.array(self.tifeatures)
         try:
-            with open(op.join(INTERIM, 'ifeatures.txt'), 'wb') as file:
-                pickle.dump(self.ifeatures, file)
+            with open(op.join(INTERIM, 'tifeatures.txt'), 'wb') as file:
+                pickle.dump(self.tifeatures, file)
 
-            with open(op.join(INTERIM, 'labels.txt'), 'wb') as file:
-                pickle.dump(self.labels, file)
+            with open(op.join(INTERIM, 'tlabels.txt'), 'wb') as file:
+                pickle.dump(self.tlabels, file)
 
-            with open(op.join(INTERIM, 'filenames.txt'), 'wb') as file:
-                pickle.dump(self.filenames, file)
+            with open(op.join(INTERIM, 'tfilenames.txt'), 'wb') as file:
+                pickle.dump(self.tfilenames, file)
 
-            with open(op.join(INTERIM, 'subsample.txt'), 'wb') as file:
-                pickle.dump(self.subsample, file)
+            with open(op.join(INTERIM, 'tsubsample.txt'), 'wb') as file:
+                pickle.dump(self.tsubsample, file)
         except:
             print('IFeatures improperly dumped')
 
         return print('IFeatures extracted')
 
     def SURFextractor(self):
-        if op.exists(op.join(INTERIM, 'alldescriptors.txt')) is False:
+        if op.exists(op.join(INTERIM, 'talldescriptors.txt')) is False:
             print('Computing SURF descriptors...')
-            for im, _, c in self.images():
+            for im, _ in self.images_test():
                 im = mh.imread(im, as_grey=True)
                 # If image is too small, no features get extracted!!
                 if im.size < 6000:
@@ -133,16 +111,16 @@ class GetFeatures(object):
                 im = im.astype(np.uint8)
                 # To use dense sampling, you can try the following line:
                 # alldescriptors.append(surf.dense(im, spacing=16))
-                self.alldescriptors.append(surf.surf(im, descriptor_only=True))
+                self.talldescriptors.append(surf.surf(im, descriptor_only=True))
             try:
-                with open(op.join(INTERIM, 'alldescriptors.txt'), 'wb') as file:
-                    pickle.dump(self.alldescriptors, file)
+                with open(op.join(INTERIM, 'talldescriptors.txt'), 'wb') as file:
+                    pickle.dump(self.talldescriptors, file)
             except:
                 print('SURF descriptors not dumped')
         else:
             try:
                 print('SURF descriptors alreardy computed, loading..')
-                self.alldescriptors = pickle.load(open(op.join(INTERIM, 'alldescriptors.txt'), 'rb'))
+                self.talldescriptors = pickle.load(open(op.join(INTERIM, 'talldescriptors.txt'), 'rb'))
             except:
                 print("Issues loading alldescriptors!")
                 sys.exit(1)
@@ -150,66 +128,66 @@ class GetFeatures(object):
 
         k = 128
         km = KMeans(k)
-        concatenated = np.concatenate(self.alldescriptors)
+        concatenated = np.concatenate(self.talldescriptors)
         print('Number of descriptors: {}'.format(
                 len(concatenated)))
         concatenated = concatenated[::64]
         print('Clustering with K-means...')
         km.fit(concatenated)
-        for d in self.alldescriptors:
+        for d in self.talldescriptors:
             c = km.predict(d)
-            self.sfeatures.append(np.bincount(c, minlength=k))
-        self.sfeatures = np.array(self.sfeatures, dtype=float)
+            self.tsfeatures.append(np.bincount(c, minlength=k))
+        self.tsfeatures = np.array(self.tsfeatures, dtype=float)
         try:
-            with open(op.join(INTERIM, 'sfeatures.txt'), 'wb') as file:
-                pickle.dump(self.sfeatures, file)
+            with open(op.join(INTERIM, 'tsfeatures.txt'), 'wb') as file:
+                pickle.dump(self.tsfeatures, file)
         except:
             print("Sfeatures dump improperly done")
 
     def keras_features_extraction(self):
         print('Computing whole-image KERAS features...')
-        if op.exists(op.join(INTERIM, 'keras_features.txt')) is False:
+        if op.exists(op.join(INTERIM, 'tkeras_features.txt')) is False:
             model = VGG16(weights='imagenet', include_top=False)
-            for im, ell, sub in self.images():
+            for im, ell, sub in self.images_test():
                 im = image.load_img(im, target_size=(224, 224))
                 x = image.img_to_array(im)
                 x = np.expand_dims(x, axis=0)
                 x = preprocess_input(x)
                 features = model.predict(x)
-                self.keras_features.append(features)
+                self.tkeras_features.append(features)
 
-            self.keras_features = np.array(self.keras_features)
+            self.tkeras_features = np.array(self.tkeras_features)
 
             try:
-                with open(op.join(INTERIM, 'keras_features.txt'), 'wb') as file:
-                    pickle.dump(self.keras_features, file)
+                with open(op.join(INTERIM, 'tkeras_features.txt'), 'wb') as file:
+                    pickle.dump(self.tkeras_features, file)
             except:
                 print('KerasFeatures improperly dumped')
                 sys.exit(1)
         else:
             try:
                 print('Keras descriptors alreardy computed, loading..')
-                self.keras_features = pickle.load(open(op.join(INTERIM, 'keras_features.txt'), 'rb'))
+                self.tkeras_features = pickle.load(open(op.join(INTERIM, 'tkeras_features.txt'), 'rb'))
             except:
                 print("Issues loading alldescriptors!")
                 sys.exit(1)
 
         for img in self.keras_features:
-            self.kfeatures.append(img.flatten())
-        self.kfeatures = np.array(self.kfeatures)
+            self.tkfeatures.append(img.flatten())
+        self.tkfeatures = np.array(self.tkfeatures)
 
         try:
-            with open(op.join(INTERIM, 'kfeatures.txt'), 'wb') as file:
-                pickle.dump(self.kfeatures, file)
+            with open(op.join(INTERIM, 'tkfeatures.txt'), 'wb') as file:
+                pickle.dump(self.tkfeatures, file)
         except:
             print('KerasFeatures improperly dumped')
 
         return print('KerasFeatures extracted')
 
     def main(self):
-        # self.wholeImage()
-        # self.SURFextractor()
-        self.keras_features_extraction()
+        self.wholeImage()
+        self.SURFextractor()
+        # self.keras_features_extraction()
 
 if __name__ == '__main__':
     GetFeatures().main()
