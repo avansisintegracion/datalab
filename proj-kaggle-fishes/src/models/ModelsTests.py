@@ -35,8 +35,8 @@ class TestClassifications(object):
             self.sfeatures = open_dump(INTERIM, 'sfeatures.txt')
             self.labels = open_dump(INTERIM, 'labels.txt')
             self.filenames = open_dump(INTERIM, 'filenames.txt')
-            self.features = open_dump(INTERIM, 'kfeatures.txt')
-            # self.features = np.hstack([self.sfeatures, self.ifeatures])
+            # self.features = open_dump(INTERIM, 'kfeatures.txt')
+            self.features = np.hstack([self.sfeatures, self.ifeatures])
             self.df_80 = open_dump(PROCESSED, 'df_80.txt')
             # self.features = self.ifeatures
         except:
