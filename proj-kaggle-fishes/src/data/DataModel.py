@@ -3,6 +3,7 @@
 import json
 import sys
 import os.path as op
+import os
 from glob import glob
 import hashlib
 import numpy as np
@@ -18,12 +19,14 @@ ROOTFOLDER = '../..'
 
 
 def removekey(d, key):
+    """Function to remove key from dict"""
     r = dict(d)
     del r[key]
     return r
 
 
 class objdict(dict):
+    """Initial class to create dict like objects"""
     def __getattr__(self, name):
         if name in self:
             return self[name]
@@ -41,9 +44,9 @@ class objdict(dict):
 
 
 class ProjFolder(objdict):
-    '''
+    """
     A class to define project's subfolders for easy access.
-    '''
+    """
     def __init__(self):
         # level data
         self.datafolder = op.join(ROOTFOLDER, 'data')
@@ -78,6 +81,9 @@ class ProjFolder(objdict):
 
 
 class CustomSplit():
+    """
+    Custom split of the data to define boat dependant split
+    """
     def __init__(self):
         self.f = ProjFolder()
         self.classes = ['ALB',
@@ -168,12 +174,12 @@ class CustomSplit():
 
 
 class ImageFile(objdict):
-    '''
+    """
     :param
     :img abs path to img
     :fishtype class of fish
     :datatype training, validation or test data point
-    '''
+    """
     def __init__(self, img, fishtype, datatype):
         self.imgid = str(hashlib.sha1(img.encode()).hexdigest())
         self.imgname = op.basename(img)
@@ -185,10 +191,10 @@ class ImageFile(objdict):
 
 
 class ImageList(objdict):
-    '''
+    """
     Create a list of all images with their properties
     Dump to json format
-    '''
+    """
     def __init__(self):
         self.f = ProjFolder()
         self.classes = ['ALB',
@@ -201,6 +207,7 @@ class ImageList(objdict):
                         'YFT']
         self.images = list()
         self.training_img = dict()
+        self.test_img = dict()
         try:
             with open(self.f.data_processed + '/df_80.txt', 'r') as file:
                 self.df_80 = pickle.load(file)
@@ -209,7 +216,7 @@ class ImageList(objdict):
             sys.exit(1)
 
     def training_images(self):
-        '''Iterate over all (image,label) pairs'''
+        """Iterate over all (image,label) pairs"""
         for ci, cl in enumerate(self.classes):
             self.images = glob('{}/{}/*.jpg'.format(self.f.data_raw_train, cl))
             for im in sorted(self.images):
@@ -234,15 +241,31 @@ class ImageList(objdict):
         with open(op.join(self.f.data_processed, 'training_images.json'), 'wb') as file:
             json.dump(self.training_img, file, sort_keys=False,
                       indent=4, separators=(',', ': '))
+        return self.training_img
 
     def test_images(self):
-        return
+        """Iterate over all images in test"""
+        self.images = glob('{}/*.jpg'.format(self.f.data_raw_test))
+        for im in sorted(self.images):
+            imf = ImageFile(img=im, fishtype='unknown', datatype='test')
+            self.test_img[imf.imgid] = removekey(imf, 'imgid')
+            cropped = op.join(self.f.data_interim_test,
+                              'crop',
+                              imf.imgname)
+            self.test_img[imf.imgid].update(dict(imgcrop=cropped))
+        with open(op.join(self.f.data_processed, 'test_images.json'), 'wb') as file:
+            json.dump(self.test_img, file, sort_keys=False,
+                      indent=4, separators=(',', ': '))
+        return self.test_img
 
     def main(self):
         if op.exists(op.join(self.f.data_processed, 'training_images.json')) is False:
             self.training_images()
+        if op.exists(op.join(self.f.data_processed, 'test_images.json')) is False:
+            self.test_images()
 
 
 if __name__ == '__main__':
+    os.chdir(op.dirname(op.abspath(__file__)))
     test = ImageList()
     test.main()
