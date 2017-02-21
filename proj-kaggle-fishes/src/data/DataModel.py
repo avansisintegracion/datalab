@@ -11,11 +11,38 @@ import pandas as pd
 import cv2
 import time
 import pickle
+import logging
+from logging.handlers import RotatingFileHandler
 from collections import Counter
 from sklearn.decomposition import RandomizedPCA
 from sklearn.cluster import KMeans
 
 ROOTFOLDER = '../..'
+
+
+def logger(path, loglevel, message):
+    """
+    logger method that outputs to both console and file
+    logleverl : critical, error, warning, info or debug
+    from Sam & Max : http://sametmax.com/ecrire-des-logs-en-python/
+    """
+    logger = logging.getLogger()
+    logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s :: %(levelname)s :: %(message)s')
+
+    file_handler = RotatingFileHandler(op.join(path, 'activity.log'), 'a', 1000000, 1)
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+    logger.addHandler(file_handler)
+
+    steam_handler = logging.StreamHandler()
+    steam_handler.setLevel(logging.DEBUG)
+    logger.addHandler(steam_handler)
+
+    getattr(logger, loglevel)(str(message))
+
+def open_dump(path, textfile):
+    return pickle.load(open(os.path.join(path, textfile), 'rb'))
 
 
 def removekey(d, key):
@@ -66,6 +93,16 @@ class ProjFolder(objdict):
             setattr(self,
                     'data_interim_' + subfol,
                     op.join(self.data_interim, subfol))
+
+        for subfol in ['crop', 'generated']:
+            setattr(self,
+                    'data_interim_train_' + subfol,
+                    op.join(self.data_interim_train, subfol))
+
+        for subfol in ['train', 'val']:
+            setattr(self,
+                    'data_interim_train_crop_' + subfol,
+                    op.join(self.data_interim_train_crop, subfol))
 
         # level data processed
         # for subfol in []:
