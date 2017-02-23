@@ -1,7 +1,10 @@
 from __future__ import print_function
 import os
+import os.path as op
+import re
 import time
 import itertools
+import json
 import pickle
 from glob import glob
 import numpy as np
@@ -18,6 +21,9 @@ from sklearn.metrics import log_loss, confusion_matrix, accuracy_score
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.ensemble import GradientBoostingClassifier
 import xgboost as xgb
+from sklearn.decomposition import PCA
+
+from src.data import DataModel as dm
 
 INTERIM = '../../data/interim'
 PROCESSED = '../../data/processed'
@@ -26,14 +32,37 @@ PROCESSED = '../../data/processed'
 class TestClassifications(object):
     '''Classification optimization'''
     def __init__(self):
+        self.f = dm.ProjFolder()
+        self.ifeatures = {'o': dict(),
+                          'f': op.join(self.f.data_interim_train_crop,
+                                       'ifeatures.txt')}
+        self.sfeatures = {'o': dict(),
+                          'f': op.join(self.f.data_interim_train_crop,
+                                       'sfeatures.txt')}
+        with open(op.join(self.f.data_processed, 'training_images.json'), 'rb') as file:
+            self.training_img = json.load(file)
         try:
-            self.ifeatures = pickle.load(open(os.path.join(INTERIM, 'ifeatures.txt'), 'rb'))
-            # self.sfeatures = pickle.load(open(os.path.join(INTERIM, 'sfeatures.txt'), 'rb'))
-            self.labels = pickle.load(open(os.path.join(INTERIM, 'labels.txt'), 'rb'))
-            self.filenames = pickle.load(open(os.path.join(INTERIM, 'filenames.txt'), 'rb'))
-            # self.allfeatures = np.hstack([self.sfeatures, self.ifeatures])
-            self.df_80 = pickle.load(open(os.path.join(PROCESSED, 'df_80.txt'), 'rb'))
-            self.features = self.ifeatures
+            print('load trainring')
+            self.ifeatures['o'] = pickle.load(open(self.ifeatures['f'], 'rb'))
+            self.sfeatures['o'] = pickle.load(open(self.sfeatures['f'], 'rb'))
+            self.ifeatures['p'] = pd.DataFrame.from_dict(self.ifeatures['o'],
+                                                         orient='index')
+            self.sfeatures['p'] = pd.DataFrame.from_dict(self.sfeatures['o'],
+                                                         orient='index')
+            self.features = pd.concat([self.ifeatures['p'], self.sfeatures['p']], axis=1)
+            # self.hogfeatures = open_dump(INTERIM, 'train/crop/hogdescriptors.txt')
+            # self.bloblogdescriptors = open_dump(INTERIM, 'train/crop/bloblogdescriptors.txt')
+            # self.labels = open_dump(INTERIM, 'train/crop/labels.txt')
+            # self.filenames = open_dump(INTERIM, 'train/crop/filenames.txt')
+            # self.otsudescriptors = open_dump(INTERIM, 'train/crop/otsudescriptors.txt')
+            # self.kfeatures = open_dump(INTERIM, 'train/crop/otsu_kfeatures.txt')
+            # self.features = np.hstack([self.kfeatures, self.ifeatures])
+            # self.features = np.hstack([self.ifeatures, self.sfeatures])
+            # self.features = np.hstack([np.array(self.bloblogdescriptors), self.ifeatures])
+            # self.features = np.hstack([np.array(self.hogfeatures), self.ifeatures])
+            # self.features = self.otsudescriptors
+            # self.df_80 = open_dump(PROCESSED, 'df_80.txt')
+            # self.features = self.ifeatures
         except:
             print('An error occured during loading of data')
         self.X_train = []
@@ -44,11 +73,10 @@ class TestClassifications(object):
                         'BET',
                         'DOL',
                         'LAG',
-                        'SHARK',
-                        'YFT',
+                        'NoF',
                         'OTHER',
-                        'NoF'
-                        ]
+                        'SHARK',
+                        'YFT']
 
     def report(self, results, n_top=3):
         for i in range(1, n_top + 1):
@@ -83,7 +111,7 @@ class TestClassifications(object):
         else:
             print('Confusion matrix, without normalization')
 
-        print(cm)
+        # print(cm)
 
         thresh = cm.max() / 2.
         for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
@@ -97,22 +125,20 @@ class TestClassifications(object):
         return
 
     def split_data(self):
-        df_80_base = self.df_80['img_file'].apply(os.path.basename)
-        for row in range(0, len(self.features)):
-            self.df_80['img_file']
-            if any(df_80_base == os.path.basename(self.filenames[row])):
-                self.X_train.append(self.features[row])
-                self.y_train.append(self.labels[row])
+        for k, img in self.training_img.iteritems():
+            if img['validation'] is False:
+                self.X_train.append(self.features.loc[k, ].values)
+                self.y_train.append(img['fishtype'])
             else:
-                self.X_val.append(self.features[row])
-                self.y_val.append(self.labels[row])
+                self.X_val.append(self.features.loc[k, ].values)
+                self.y_val.append(img['fishtype'])
 
         self.X_train = np.array(self.X_train)
         self.X_val = np.array(self.X_val)
         return
 
-    def CustomGridSearch(self, classifier, param_grid):
-        clf = Pipeline([('preproc', StandardScaler()),
+    def CustomGridSearch(self, preproc, classifier, param_grid):
+        clf = Pipeline([('preproc', preproc),
                         ('classifier', classifier)])
         grid = GridSearchCV(clf,
                             param_grid=param_grid,
@@ -121,153 +147,134 @@ class TestClassifications(object):
         print('Performing classification with %s...' % str(classifier))
         start = time.time()
         grid.fit(self.X_train, self.y_train)
-        print("GridSearchCV took %.2f seconds for %d candidate parameter settings."
+        print("GridSearchCV took %.2f sec for %d candidate parameter settings."
               % (time.time() - start, len(grid.cv_results_['params'])))
         return self.report(grid.cv_results_)
 
-    def RunOptimizedClassifier(self, classifier):
-        scaler_class = Pipeline([('preproc', StandardScaler()),
+    def RunOptClassif(self, preproc, classifier):
+        scaler_class = Pipeline([('preproc', preproc),
                                  ('classifier', classifier)])
         scaler_class.fit(self.X_train, self.y_train)
         y_true, y_pred = self.y_val, scaler_class.predict_proba(self.X_val)
+        y_pred = np.clip(y_pred, 0.02, 0.98, out=None)
         return str(classifier), log_loss(y_true, y_pred), scaler_class.predict(self.X_val)
 
     def testAll(self):
+        # ## LogisticRegression
         # C_range = 10.0 ** np.arange(-4, 3)
-        # self.CustomGridSearch(classifier=LogisticRegression(),
+        # self.CustomGridSearch(preproc=StandardScaler(),
+        #                       classifier=LogisticRegression(),
         #                       param_grid={'classifier__C': C_range}
         #                       )
-        # self.RunOptimizedClassifier(classifier=LogisticRegression(C=10))
-        N_range = [10, 30, 50, 70, 90]
-        self.CustomGridSearch(classifier=RandomForestClassifier(),
-                              param_grid={'classifier__n_estimators': N_range}
-                              )
-        results = self.RunOptimizedClassifier(classifier=RandomForestClassifier(n_estimators=50))
-        print("Used :%s" % results[0])
-        print("Logloss score on validation set : %s" % results[1])
+        # classifier = LogisticRegression(C=10)
+        # results = self.RunOptClassif(preproc=StandardScaler(),
+        #                              classifier=classifier)
+        # print("Used :%s" % results[0])
+        # print("Logloss score on validation set : %s" % results[1])
+        # cnf_matrix = confusion_matrix(self.y_val, results[2])
+        # np.set_printoptions(precision=2)
+        # # Plot normalized confusion matrix
+        # plt.figure()
+        # self.plot_confusion_matrix(cnf_matrix,
+        #                            classes=self.classes,
+        #                            normalize=False,
+        #                            title='Confusion matrix')
+        # plt.savefig(os.path.join(INTERIM, 'LogisticReg_confusion_matrix.png'),
+        #             bbox_inches='tight')
+        # #######################################################################
+        # ## RandomForest
+        # N_range = [10, 30, 50, 70, 90]
+        # self.CustomGridSearch(preproc=StandardScaler(),
+        #                       classifier=RandomForestClassifier(),
+        #                       param_grid={'classifier__n_estimators': N_range}
+        #                       )
+        # classifier = RandomForestClassifier(n_estimators=50)
+        # results = self.RunOptClassif(preproc=StandardScaler(),
+        #                              classifier=classifier)
+        # print("Used :%s" % results[0])
+        # print("Logloss score on validation set : %s" % results[1])
+        # cnf_matrix = confusion_matrix(self.y_val, results[2])
+        # np.set_printoptions(precision=2)
+        # # Plot normalized confusion matrix
+        # plt.figure()
+        # self.plot_confusion_matrix(cnf_matrix,
+        #                            classes=self.classes,
+        #                            normalize=False,
+        #                            title='Confusion matrix')
+        # plt.savefig(os.path.join(INTERIM, 'RandomForest_confusion_matrix.png'),
+        #             bbox_inches='tight')
+        #######################################################################
+        ## Naive bayes
+        # alpha = 10.0 ** np.arange(-4, 3)
+        # self.CustomGridSearch(preproc=MinMaxScaler(),
+        #                       classifier=MultinomialNB(),
+        #                       param_grid={'classifier__alpha': alpha}
+        #                       )
+        # classifier = MultinomialNB(alpha=10)
+        # results = self.RunOptClassif(preproc=MinMaxScaler(),
+        #                              classifier=classifier)
+        # print("Used :%s" % results[0])
+        # print("Logloss score on validation set : %s" % results[1])
+        # cnf_matrix = confusion_matrix(self.y_val, results[2])
+        # np.set_printoptions(precision=2)
+        # # Plot normalized confusion matrix
+        # plt.figure()
+        # self.plot_confusion_matrix(cnf_matrix,
+        #                            classes=self.classes,
+        #                            normalize=False,
+        #                            title='Confusion matrix')
+        # plt.savefig(os.path.join(INTERIM, 'NaiveBayes_confusion_matrix.png'),
+        #             bbox_inches='tight')
+        #######################################################################
+        ## xgboost
+        # param_test = {'classifier__max_depth': range(3, 10, 2),
+        #               'classifier__min_child_weight': range(1, 8, 2),
+        #               'classifier__learning_rate': [0.001, 0.1, 0.7, 1],
+        #               'classifier__n_estimators': [10, 30, 70, 100, 150],
+        #               }
+        # param_test = {'classifier__learning_rate': [0.001, 0.1, 0.7, 1],
+        #               'classifier__n_estimators': [10, 30, 70, 100, 150],
+        #               }
+        # self.CustomGridSearch(preproc=PCA(n_components=40, svd_solver='randomized'),
+        #                       classifier=xgb.XGBClassifier(objective='multi:softmax'),
+        #                       param_grid=param_test
+        #                       )
+        classifier = xgb.XGBClassifier(learning_rate=0.05,
+                                       n_estimators=100,
+                                       max_depth=7,
+                                       min_child_weight=1,
+                                       gamma=0.6,
+                                       reg_alpha=0.4,
+                                       subsample=0.6,
+                                       colsample_bytree=0.8,
+                                       objective='multi:softmax',
+                                       nthread=6,
+                                       scale_pos_weight=1,
+                                       seed=70)
+        results = self.RunOptClassif(preproc=StandardScaler(),
+                                     classifier=classifier)
+        # results = self.RunOptClassif(preproc=PCA(n_components=40, svd_solver='randomized'),
+        #                              classifier=classifier)
+        param = "Parameters used :%s" % results[0]
+        resultsscore = "Logloss score on validation set : %s" % results[1]
         cnf_matrix = confusion_matrix(self.y_val, results[2])
-        np.set_printoptions(precision=2)
+        log = param + '\n' + resultsscore + '\nConfusion matrix :\n' + str(cnf_matrix)
+        dm.logger(path=self.f.data_interim_train_crop, loglevel='info', message=log)
+        # dm.logger(path=self.f.data_interim_train_crop, loglevel='info', message=resultsscore)
+        # dm.logger(path=self.f.data_interim_train_crop, loglevel='info', message=cnf_matrix)
+        # np.set_printoptions(precision=2)
         # Plot normalized confusion matrix
-        plt.figure()
-        self.plot_confusion_matrix(cnf_matrix, classes=self.classes, normalize=False,
-                                   title='Confusion matrix')
-        plt.savefig(os.path.join(INTERIM, 'RandomForest_confusion_matrix.png'), bbox_inches='tight')
+        # plt.figure()
+        # self.plot_confusion_matrix(cnf_matrix,
+        #                            classes=self.classes,
+        #                            normalize=False,
+        #                            title='Confusion matrix')
+        # plt.savefig(os.path.join(INTERIM, 'XGBoost_withotsu_confusion_matrix.png'),
+        #             bbox_inches='tight')
 
 
 if __name__ == '__main__':
+    os.chdir(op.dirname(op.abspath(__file__)))
     test = TestClassifications()
     test.split_data()
     test.testAll()
-
-# y_pred = scaler_logreg.predict(X_test)
-# cnf_matrix = confusion_matrix(y_test, y_pred)
-# np.set_printoptions(precision=2)
-# # Plot normalized confusion matrix
-# plt.figure()
-# plot_confusion_matrix(cnf_matrix, classes=classes, normalize=False,
-#                       title='Confusion matrix')
-# plt.show()
-#
-#
-# # Test with random forest
-# N_range = [10, 30, 50, 70, 90]
-# clf = Pipeline([('preproc', StandardScaler()),
-#                 ('classifier', RandomForestClassifier())])
-# grid = GridSearchCV(clf,
-#                     param_grid={'classifier__n_estimators': N_range},
-#                     cv=5,
-#                     scoring='neg_log_loss')
-#
-# print('Performing classification with all features combined...')
-# start = time.time()
-# grid.fit(X_train, y_train)
-# print("GridSearchCV took %.2f seconds for %d candidate parameter settings."
-#       % (time.time() - start, len(grid.cv_results_['params'])))
-# report(grid.cv_results_)
-#
-# ## -- End pasted text --
-# # Performing classification with all features combined...
-# # GridSearchCV took 25.76 seconds for 5 candidate parameter settings.
-# # Model with rank: 1
-# # Mean validation score: -0.435 (std: 0.049)
-# # Parameters: {'classifier__n_estimators': 70}
-# #
-# # Model with rank: 2
-# # Mean validation score: -0.449 (std: 0.035)
-# # Parameters: {'classifier__n_estimators': 90}
-# #
-# # Model with rank: 3
-# # Mean validation score: -0.490 (std: 0.072)
-# # Parameters: {'classifier__n_estimators': 50}
-#
-# scaler_rdnfor = Pipeline([('preproc', StandardScaler()),
-#                           ('classifier', RandomForestClassifier(n_estimators=70))])
-# scaler_rdnfor.fit(X_train, y_train)
-# y_true, y_pred = y_test, scaler_rdnfor.predict_proba(X_test)
-# log_loss(y_true, y_pred)
-# # 0.52833125901143274
-# # 3.6291476432877974
-#
-# y_pred = scaler_rdnfor.predict(X_test)
-# cnf_matrix = confusion_matrix(y_test, y_pred)
-# np.set_printoptions(precision=2)
-# # Plot normalized confusion matrix
-# plt.figure()
-# plot_confusion_matrix(cnf_matrix, classes=classes, normalize=False,
-#                       title='Confusion matrix')
-# plt.show()
-#
-#
-# # Test with naive bayes
-# scaler_multinomialNB = Pipeline([('preproc', MinMaxScaler()),
-#                                  ('classifier', MultinomialNB(alpha=0.001))])
-# scaler_multinomialNB.fit(X_train, y_train)
-# y_true, y_pred = y_test, scaler_multinomialNB.predict_proba(X_test)
-# log_loss(y_true, y_pred)
-# # 2.2503639100682293 --> not a good idea
-#
-# # sklearn.ensemble.GradientBoostingClassifier
-# scaler_GDBoost = Pipeline([('preproc', StandardScaler()),
-#                 ('classifier', GradientBoostingClassifier(n_estimators=10, learning_rate=1.0, max_depth=1, random_state=0))])
-# scaler_GDBoost.fit(X_train, y_train)
-# y_true, y_pred = y_test, scaler_GDBoost.predict_proba(X_test)
-# log_loss(y_true, y_pred)
-# # 2.4354344058403989
-#
-# # testing with xgboost
-# param_test1 = {'max_depth': range(3, 10, 2),
-#                'min_child_weight': range(1, 6, 2)
-#                }
-#
-# gsearch1 = GridSearchCV(estimator=xgb.XGBClassifier(learning_rate=0.1,
-#                                                     n_estimators=100,
-#                                                     max_depth=5,
-#                                                     min_child_weight=1,
-#                                                     gamma=0,
-#                                                     subsample=0.8,
-#                                                     colsample_bytree=0.8,
-#                                                     objective='multi:softmax',
-#                                                     nthread=4,
-#                                                     scale_pos_weight=1,
-#                                                     seed=27),
-#                         param_grid=param_test1,
-#                         scoring='neg_log_loss',
-#                         n_jobs=4,
-#                         iid=False,
-#                         cv=5)
-#
-# gsearch1.fit(X_train, y_train)
-#
-# gsearch1.grid_scores_, gsearch1.best_params_, gsearch1.best_score_
-#
-# model = xgb.XGBClassifier(max_depth=1, objective='multi:softmax',
-#                           reg_lambda=0.1)
-#
-# model.fit(X_train, y_train, eval_metric='mlogloss')
-# # make predictions for test data
-# y_pred = model.predict(X_test)
-# predictions = [round(value) for value in y_pred]
-# # evaluate predictions
-# accuracy = accuracy_score(y_test, predictions)
-# print("Accuracy: %.2f" % (accuracy))
-# # Accuracy: 0.64

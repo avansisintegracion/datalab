@@ -17,7 +17,8 @@ bb_box = pd.read_csv(PROCESSED + 'bbox.csv', names= column_name)
 
 def create_rect(bb, color='red'):
     p_tails = (bb[3], bb[4])
-    p_heads = (bb[3] + bb[2], bb[4] + bb[1])
+    p_heads = (bb[2], bb[1])
+    #p_heads = (bb[3] + bb[2], bb[4] + bb[1])
     p_middle = ((p_heads[0] + p_tails[0]) / 2, (p_heads[1] + p_tails[1]) / 2)
     dist = np.sqrt((p_heads[0] - p_tails[0]) ** 2 + (p_heads[1] - p_tails[1]) ** 2)
     offset = 3.0 * dist / 4.0
@@ -28,7 +29,8 @@ def create_rect(bb, color='red'):
     y_up = max(0, p_middle[1] - offset)
     y_down = min(img_height - 1, p_middle[1] + offset)
     x_left, x_right, y_up, y_down = int(x_left), int(x_right), int(y_up), int(y_down)
-    return plt.Rectangle((bb[3]-100, bb[4]-100), bb[2]+100, bb[1]+100, color=color, fill=False, lw=3)
+    #return plt.Rectangle((bb[3], bb[4]), bb[2], bb[1], color=color, fill=False, lw=3)
+    return plt.Rectangle((x_left, y_down), (x_right-x_right), (y_up-y_down), color=color, fill=False, lw=3)
 
 
 os.chdir(RAW_DIR + 'test')
@@ -45,6 +47,7 @@ for i,j in enumerate(g):
     #im = cv2.resize(im, (224, 224))
     plt.imshow(im)
     ax=plt.gca()
+    #if(abs(bb[0,][1] - bb[0,][4]) < 60 or abs(bb[0,][1] - bb[0,][4]) < 60):
     ax.add_patch(create_rect(bb[0,]))
     name=CROP_TEST_DIR + j
     print(name)

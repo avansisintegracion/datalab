@@ -12,11 +12,11 @@ batches = get_batches(path+'train', shuffle=False, batch_size=1)
 print('Inside ' + path + 'test')
 test_batches = get_batches(path+'test', shuffle=False, batch_size=1)
 
-path = '../../data/interim/train/devcrop/'
+path = '../../data/interim/train/crop/'
 
 print('Inside ' + path + 'train should be 3277')
 batches = get_batches(path+'train', shuffle=False, batch_size=1)
-print('Inside ' + path + 'valid ')
-val_batches = get_batches(path+'valid', shuffle=False, batch_size=1)
+print('Inside ' + path + 'val ')
+val_batches = get_batches(path+'val', shuffle=False, batch_size=1)
 print('Inside ' + path + 'test')
 test_batches = get_batches(path+'test', shuffle=False, batch_size=1)
