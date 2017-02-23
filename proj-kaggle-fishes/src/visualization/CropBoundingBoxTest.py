@@ -4,18 +4,18 @@ import PIL
 import os
 from glob import glob
 import cv2
-from matplotlib import pyplot as plt
 import numpy as np
+import shutil
 
 # Paths
 RAW_DIR = '../../data/raw/'
 PROCESSED = '../../data/processed/'
-CROP_TEST_DIR = '../../interim/train/crop/test/'
+CROP_TEST_DIR = '../../interim/test/'
 # Read 
 column_name = ['image', 'height', 'width', 'x', 'y', 'sixeX', 'sizeY']
 bb_box = pd.read_csv(PROCESSED + 'bbox.csv', names= column_name)
 
-def create_rect(bb, color='red'):
+def crop_image(bb):
     p_tails = (bb[3], bb[4])
     p_heads = (bb[2], bb[1])
     #p_heads = (bb[3] + bb[2], bb[4] + bb[1])
@@ -39,8 +39,6 @@ g = glob('*')
 if not os.path.isdir(CROP_TEST_DIR):
     os.makedirs(CROP_TEST_DIR)
 
-sizes = [PIL.Image.open(f).size for f in g]
-
 for i,j in enumerate(g):
     bb = bb_box.loc[bb_box['image'] == g[i]].iloc[:,[0,1,2,3,4,5,6]].values
     im = cv2.imread(g[i])
@@ -51,5 +49,11 @@ for i,j in enumerate(g):
     ax.add_patch(create_rect(bb[0,]))
     name=CROP_TEST_DIR + j
     print(name)
-    plt.savefig(name)
-    plt.cla()
+    if(bb[0,][1] < 0 or bb[0,][2] < 0):
+        shutil.copyfile(j, CROP_TEST_DIR + j)
+    else:
+        x_left, x_right, y_up, y_down = crop_image(bb[0,])
+        im = im[y_up:y_down+1, x_left:x_right+1, :]
+        cv2.imwrite(name,im)
+
+#sizes = [PIL.Image.open(f).size for f in g]

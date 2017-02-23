@@ -29,6 +29,10 @@ INTERIM = '../../data/interim'
 PROCESSED = '../../data/processed'
 
 
+def open_dump(path, textfile):
+    return pickle.load(open(os.path.join(path, textfile), 'rb'))
+
+
 class TestClassifications(object):
     '''Classification optimization'''
     def __init__(self):

@@ -46,14 +46,11 @@ base_model = InceptionV3(weights='imagenet', include_top=False)
 # Epoch 3/3
 # 3277/3277 [==============================] - 138s - loss: 0.1595 - acc:
 # 0.9463 - val_loss: 0.6203 - val_acc: 0.8380
-#base_model = ResNet50(weights='imagenet', include_top=False)
+# base_model = ResNet50(weights='imagenet', include_top=False)
 # Epoch 3/3
 # 3277/3277 [==============================] - 176s - loss: 12.9801 - acc:
 # 0.1947 - val_loss: 13.0234 - val_acc: 0.1920
 
-
-# batch of images 
-batch_size=64
 
 # add a global spatial average pooling layer
 x = base_model.output
