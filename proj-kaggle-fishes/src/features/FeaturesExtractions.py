@@ -38,6 +38,10 @@ INTERIM = '../../data/interim'
 class GetFeatures(object):
     """Feature extraction and image preprocessing"""
     def __init__(self,
+                 ifeatures,
+                 sfeatures,
+                 projectfolder,
+                 imagetype,
                  classes=['ALB',
                           'BET',
                           'DOL',
@@ -48,15 +52,12 @@ class GetFeatures(object):
                           'YFT']):
         self.classes = classes
         self.images = []
-        self.f = dm.ProjFolder()
-        self.ifeatures = {'o': dict(),
-                          'f': op.join(self.f.data_interim_train_crop,
-                                       'ifeatures.txt')}
-        self.sfeatures = {'o': dict(),
-                          'f': op.join(self.f.data_interim_train_crop,
-                                       'sfeatures.txt')}
+        self.f = projectfolder
+        self.ifeatures = ifeatures
+        self.sfeatures = sfeatures
+        self.imagetype = imagetype
         self.alldescriptors = {'o': dict(),
-                               'f': op.join(self.f.data_interim_train_crop,
+                               'f': op.dirname(self.sfeatures['f']),
                                             'alldescriptors.txt')}
         self.keras_features = []
         self.kfeatures = []
@@ -101,7 +102,7 @@ class GetFeatures(object):
         return np.concatenate([mh.features.haralick(img).ravel(),
                                self.chist(im)])
 
-    def load_images(self, imgtype='imgcrop'):
+    def load_images(self):
         """Get all cropped images"""
         try:
             config = op.join(self.f.data_processed, 'training_images.json')
@@ -113,7 +114,7 @@ class GetFeatures(object):
             sys.exit(1)
 
         for id, im in self.images.iteritems():
-            yield im[imgtype], id
+            yield im[self.imagetype], id
 
     def wholeImage(self):
         print('Computing whole-image texture features...')
@@ -388,7 +389,7 @@ class GetFeatures(object):
     #     print('Otsu Descriptor computation complete.')
 
     def main(self):
-        # self.wholeImage()
+        self.wholeImage()
         self.SURFextractor()
         # self.keras_features_extraction()
         # self.HOGextractor()
@@ -398,6 +399,20 @@ class GetFeatures(object):
 
 if __name__ == '__main__':
     os.chdir(op.dirname(op.abspath(__file__)))
-    GetFeatures().main()
+    projectfolder = dm.ProjFolder()
+    # crop = GetFeatures(ifeatures={'o': dict(),
+    #                               'f': op.join(projectfolder.data_interim_train_crop, 'ifeatures.txt')},
+    #                    sfeatures={'o': dict(),
+    #                               'f': op.join(projectfolder.f.data_interim_train_crop,
+    #                                 'sfeatures.txt')},
+    #                    projectfolder=projectfolder))
+    # crop.main()
+    rotatecrop = GetFeatures(ifeatures={'o': dict(),
+                                        'f': op.join(projectfolder.data_interim_train_rotatecrop, 'rifeatures.txt')},
+                             sfeatures={'o': dict(),
+                                        'f': op.join(projectfolder.data_interim_train_rotatecrop, 'rsfeatures.txt')},
+                             projectfolder=projectfolder,
+                             imagetype='imgrotatecrop')
+    rotatecrop.main()
     # GetFeatures(basedir=op.join(INTERIM, 'train', 'generated'),
     #             subfol=['train']).main()

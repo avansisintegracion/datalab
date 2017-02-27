@@ -11,6 +11,8 @@ import numpy as np
 import pandas as pd
 import mahotas as mh
 from mahotas.features import surf
+import matplotlib
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
@@ -22,6 +24,10 @@ from sklearn.naive_bayes import MultinomialNB
 from sklearn.ensemble import GradientBoostingClassifier
 import xgboost as xgb
 from sklearn.decomposition import PCA
+from sklearn.neural_network import BernoulliRBM
+from scipy.ndimage import convolve
+from skimage import io
+from skimage.transform import resize
 
 from src.data import DataModel as dm
 
@@ -31,14 +37,11 @@ PROCESSED = '../../data/processed'
 
 class TestClassifications(object):
     '''Classification optimization'''
-    def __init__(self):
-        self.f = dm.ProjFolder()
-        self.ifeatures = {'o': dict(),
-                          'f': op.join(self.f.data_interim_train_crop,
-                                       'ifeatures.txt')}
-        self.sfeatures = {'o': dict(),
-                          'f': op.join(self.f.data_interim_train_crop,
-                                       'sfeatures.txt')}
+    def __init__(self, ifeatures, sfeatures, projectfolder, imagetype):
+        self.f = projectfolder
+        self.ifeatures = ifeatures
+        self.sfeatures = sfeatures
+        self.imagetype = imagetype
         with open(op.join(self.f.data_processed, 'training_images.json'), 'rb') as file:
             self.training_img = json.load(file)
         try:
@@ -49,6 +52,7 @@ class TestClassifications(object):
             self.sfeatures['p'] = pd.DataFrame.from_dict(self.sfeatures['o'],
                                                          orient='index')
             self.features = pd.concat([self.ifeatures['p'], self.sfeatures['p']], axis=1)
+            print(self.sfeatures['f'])
             # self.hogfeatures = open_dump(INTERIM, 'train/crop/hogdescriptors.txt')
             # self.bloblogdescriptors = open_dump(INTERIM, 'train/crop/bloblogdescriptors.txt')
             # self.labels = open_dump(INTERIM, 'train/crop/labels.txt')
@@ -127,6 +131,20 @@ class TestClassifications(object):
         for k, img in self.training_img.iteritems():
             if img['validation'] is False:
                 self.X_train.append(self.features.loc[k, ].values)
+                self.y_train.append(img['fishtype'])
+            else:
+                self.X_val.append(self.features.loc[k, ].values)
+                self.y_val.append(img['fishtype'])
+
+        self.X_train = np.array(self.X_train)
+        self.X_val = np.array(self.X_val)
+        return
+
+    def split_data_img(self):
+        for k, img in self.training_img.iteritems():
+            im = resize(io.imread(img[self.imagetype], as_grey=True), (250, 250)).ravel()
+            if img['validation'] is False:
+                self.X_train.append(im)
                 self.y_train.append(img['fishtype'])
             else:
                 self.X_val.append(self.features.loc[k, ].values)
@@ -226,39 +244,67 @@ class TestClassifications(object):
         #             bbox_inches='tight')
         #######################################################################
         ## xgboost
-        # param_test = {'classifier__max_depth': range(3, 10, 2),
-        #               'classifier__min_child_weight': range(1, 8, 2),
-        #               'classifier__learning_rate': [0.001, 0.1, 0.7, 1],
+        param_test = {'classifier__max_depth': range(3, 10, 2),
+                      'classifier__min_child_weight': range(1, 8, 2),
+                      'classifier__learning_rate': [0.001, 0.1, 0.7, 1],
+                      'classifier__n_estimators': [10, 30, 70, 100, 150],
+                      }
+        # param_test = {'preproc__learning_rate': [0.001, 0.1, 0.7, 1],
         #               'classifier__n_estimators': [10, 30, 70, 100, 150],
         #               }
         # param_test = {'classifier__learning_rate': [0.001, 0.1, 0.7, 1],
         #               'classifier__n_estimators': [10, 30, 70, 100, 150],
         #               }
-        # self.CustomGridSearch(preproc=PCA(n_components=40, svd_solver='randomized'),
-        #                       classifier=xgb.XGBClassifier(objective='multi:softmax'),
-        #                       param_grid=param_test
-        #                       )
-        classifier = xgb.XGBClassifier(learning_rate=0.05,
-                                       n_estimators=100,
-                                       max_depth=7,
-                                       min_child_weight=1,
-                                       gamma=0.6,
-                                       reg_alpha=0.4,
-                                       subsample=0.6,
-                                       colsample_bytree=0.8,
-                                       objective='multi:softmax',
-                                       nthread=6,
-                                       scale_pos_weight=1,
-                                       seed=70)
-        results = self.RunOptClassif(preproc=StandardScaler(),
-                                     classifier=classifier)
-        # results = self.RunOptClassif(preproc=PCA(n_components=40, svd_solver='randomized'),
-        #                              classifier=classifier)
+        # PCA(n_components=40, svd_solver='randomized')
+        results = self.CustomGridSearch(preproc=StandardScaler(),
+                              classifier=xgb.XGBClassifier(objective='multi:softmax'),
+                              param_grid=param_test
+                              )
         param = "Parameters used :%s" % results[0]
         resultsscore = "Logloss score on validation set : %s" % results[1]
-        cnf_matrix = confusion_matrix(self.y_val, results[2])
-        log = param + '\n' + resultsscore + '\nConfusion matrix :\n' + str(cnf_matrix)
+        log = param + '\n' + resultsscore
         dm.logger(path=self.f.data_interim_train_crop, loglevel='info', message=log)
+        # rbm = BernoulliRBM(random_state=0, verbose=True)
+        # rbm.learning_rate = 0.06
+        # rbm.n_iter = 20
+        # # More components tend to give better prediction performance, but larger
+        # # fitting time
+        # rbm.n_components = 200
+
+        # classifier = xgb.XGBClassifier(learning_rate=0.05,
+        #                                n_estimators=100,
+        #                                max_depth=7,
+        #                                min_child_weight=1,
+        #                                gamma=0.6,
+        #                                reg_alpha=0.4,
+        #                                subsample=0.6,
+        #                                colsample_bytree=0.8,
+        #                                objective='multi:softmax',
+        #                                nthread=6,
+        #                                scale_pos_weight=1,
+        #                                seed=70)
+        # results = self.RunOptClassif(preproc=StandardScaler(),
+        #                              classifier=classifier)
+        # results = self.RunOptClassif(preproc=rbm,
+        #                      classifier=classifier)
+        # results = self.RunOptClassif(preproc=PCA(n_components=40, svd_solver='randomized'),
+        #                              classifier=classifier)
+        # param = "Parameters used :%s" % results[0]
+        # resultsscore = "Logloss score on validation set : %s" % results[1]
+        # cnf_matrix = confusion_matrix(self.y_val, results[2])
+        # log = param + '\n' + resultsscore + '\nConfusion matrix :\n' + str(cnf_matrix)
+        # dm.logger(path=self.f.data_interim_train_crop, loglevel='info', message=log)
+        # plt.figure(figsize=(4.2, 4))
+        # for i, comp in enumerate(rbm.components_):
+        #     plt.subplot(10, 20, i + 1)
+        #     plt.imshow(comp.reshape((224, 224)), cmap=plt.cm.gray_r,
+        #                interpolation='nearest')
+        #     plt.xticks(())
+        #     plt.yticks(())
+        # plt.suptitle('200 components extracted by RBM', fontsize=16)
+        # plt.subplots_adjust(0.08, 0.02, 0.92, 0.85, 0.08, 0.23)
+        # plt.savefig(os.path.join(self.f.data_interim_train_crop, 'XGBoost_RBM_features.png'),
+        #             bbox_inches='tight')
         # dm.logger(path=self.f.data_interim_train_crop, loglevel='info', message=resultsscore)
         # dm.logger(path=self.f.data_interim_train_crop, loglevel='info', message=cnf_matrix)
         # np.set_printoptions(precision=2)
@@ -274,6 +320,13 @@ class TestClassifications(object):
 
 if __name__ == '__main__':
     os.chdir(op.dirname(op.abspath(__file__)))
-    test = TestClassifications()
+    projectfolder = dm.ProjFolder()
+    test = TestClassifications(ifeatures={'o': dict(),
+                                          'f': op.join(projectfolder.data_interim_train_rotatecrop, 'rifeatures.txt')},
+                               sfeatures={'o': dict(),
+                                          'f': op.join(projectfolder.data_interim_train_rotatecrop, 'rsfeatures.txt')},
+                               projectfolder=projectfolder,
+                               imagetype='imgrotatecrop')
     test.split_data()
+    # test.split_data_img()
     test.testAll()
