@@ -23,7 +23,7 @@ ROOTFOLDER = '../..'
 def logger(path, loglevel, message):
     """
     logger method that outputs to both console and file
-    logleverl : critical, error, warning, info or debug
+    loglevel : critical, error, warning, info or debug
     from Sam & Max : http://sametmax.com/ecrire-des-logs-en-python/
     """
     logger = logging.getLogger()
@@ -35,9 +35,9 @@ def logger(path, loglevel, message):
     file_handler.setFormatter(formatter)
     logger.addHandler(file_handler)
 
-    steam_handler = logging.StreamHandler()
-    steam_handler.setLevel(logging.DEBUG)
-    logger.addHandler(steam_handler)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(logging.DEBUG)
+    logger.addHandler(stream_handler)
 
     getattr(logger, loglevel)(str(message))
 
@@ -83,7 +83,7 @@ class ProjFolder(objdict):
                     op.join(self.datafolder, subfol))
 
         # level data external
-        for subfol in ['annos']:
+        for subfol in ['annos', 'rotate_crop']:
             setattr(self,
                     'data_external_' + subfol,
                     op.join(self.data_external, subfol))
@@ -94,7 +94,7 @@ class ProjFolder(objdict):
                     'data_interim_' + subfol,
                     op.join(self.data_interim, subfol))
 
-        for subfol in ['crop', 'generated']:
+        for subfol in ['crop', 'generated', 'rotatecrop']:
             setattr(self,
                     'data_interim_train_' + subfol,
                     op.join(self.data_interim_train, subfol))
@@ -103,6 +103,11 @@ class ProjFolder(objdict):
             setattr(self,
                     'data_interim_train_crop_' + subfol,
                     op.join(self.data_interim_train_crop, subfol))
+
+        for subfol in ['train', 'val']:
+            setattr(self,
+                    'data_interim_train_rotatecrop_' + subfol,
+                    op.join(self.data_interim_train_rotatecrop, subfol))
 
         # level data processed
         # for subfol in []:
@@ -265,6 +270,11 @@ class ImageList(objdict):
                                       'train',
                                       cl,
                                       imf.imgname)
+                    rotatecrop = op.join(self.f.data_interim_train,
+                                         'rotatecrop',
+                                         'train',
+                                         cl,
+                                         imf.imgname)
                     val = False
                 else:
                     val = True
@@ -273,8 +283,14 @@ class ImageList(objdict):
                                       'val',
                                       cl,
                                       imf.imgname)
+                    rotatecrop = op.join(self.f.data_interim_train,
+                                         'rotatecrop',
+                                         'val',
+                                         cl,
+                                         imf.imgname)
                 self.training_img[imf.imgid].update(dict(imgcrop=cropped,
-                                                    validation=val))
+                                                         imgrotatecrop=rotatecrop,
+                                                         validation=val))
         with open(op.join(self.f.data_processed, 'training_images.json'), 'wb') as file:
             json.dump(self.training_img, file, sort_keys=False,
                       indent=4, separators=(',', ': '))

@@ -49,7 +49,7 @@ os.chdir(CROP_DIR + 'train')
 g = glob.glob('*')
 for d in g: 
     if not os.path.isdir('../../cropotsu/train/'+d):
-        os.mkdir('../../cropotsu/train/'+d)
+        os.makedirs('../../cropotsu/train/'+d)
         print('../../cropotsu/train/'+d)
     else: print("Existing ../../cropotsu/"+d)
 
@@ -61,7 +61,8 @@ for i in g:
     img = cv2.imread(i)
     #print(img.dtype)
     img_grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    otsu = cv2.threshold(img_grey,0,255,cv2.THRESH_OTSU)[0] - 30
+    blur = cv2.GaussianBlur(img_grey,(5,5),0)
+    otsu = cv2.threshold(blur,0,255,cv2.THRESH_OTSU)[0] - 30
     #print(otsu)
     nb_img = remove_background(img, otsu)
     name = '../../cropotsu/train/' + i
@@ -73,7 +74,7 @@ os.chdir('../val')
 g = glob.glob('*')
 for d in g: 
     if not os.path.isdir('../../cropotsu/val/'+d):
-        os.mkdir('../../cropotsu/val/'+d)
+        os.makedirs('../../cropotsu/val/'+d)
         print('../../cropotsu/val/'+d)
     else: print("Existing ../../cropotsu/"+d)
 
@@ -85,7 +86,8 @@ for i in g:
     img = cv2.imread(i)
     #print(img.dtype)
     img_grey = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    otsu = cv2.threshold(img_grey,0,255,cv2.THRESH_OTSU)[0] - 30
+    blur = cv2.GaussianBlur(img_grey,(5,5),0)
+    otsu = cv2.threshold(blur,0,255,cv2.THRESH_OTSU)[0] - 30
     #print(otsu)
     nb_img = remove_background(img, otsu)
     name = '../../cropotsu/val/' + i
