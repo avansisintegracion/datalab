@@ -156,7 +156,7 @@ class InceptionFineTuning(object):
         # Note that the preprocessing of InceptionV3 is:
         # (x / 255 - 0.5) x 2
 
-        print("--- Adding on top layers %.1s seconds ---" % (time.time() - start_time))
+        print("--- Adding on top layers %.1f seconds ---" % (time.time() - start_time))
         output = base_model.get_layer(index = -1).output  # Shape: (8, 8, 2048)
         output = AveragePooling2D((8, 8), strides=(8, 8), name='avg_pool')(output)
         output = Flatten(name='flatten')(output)
@@ -185,7 +185,7 @@ class InceptionFineTuning(object):
                 callbacks = callbacks_list)
 
         # Use the best model epoch
-        print("--- Starting prediction %.1s seconds ---" % (time.time() - start_time))
+        print("--- Starting prediction %.1f seconds ---" % (time.time() - start_time))
         InceptionV3_model = load_model(SaveModelName)
 
         # Data augmentation for prediction 
@@ -234,6 +234,7 @@ class InceptionFineTuning(object):
         df = pd.DataFrame(preds)
         df.columns = self.classes
         self.ProbabilityDistribution(df)
+        print("--- End %.1f seconds ---" % (time.time() - start_time))
 
 if __name__ == '__main__':
     os.chdir(op.dirname(op.abspath(__file__)))
