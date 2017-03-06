@@ -3,17 +3,15 @@ import os
 import json
 import cv2
 import numpy as np
+import shutil
+import pickle
 
-LABELS_DIR = '../../data/external/labels/'
-OUTPUT_DIR = '../../data/processed/train/'
+ANNOS_DIR = '../../data/external/annos/'
+OUTPUT_DIR = '../../data/interim/train/crop/train/'
 TRAIN_DIR = '../../data/raw/train/'
 
-def make_cropped_dataset():
-    label_files = glob.glob(LABELS_DIR + '*.json')
-    for file in label_files:
-        process_labels(file)
 
-def process_labels(label_file):
+def process_annos(label_file):
     file_name = os.path.basename(label_file)
     class_name = file_name.split("_")[0]
     if not os.path.isdir(OUTPUT_DIR + class_name.upper()):
@@ -23,13 +21,20 @@ def process_labels(label_file):
         data = json.load(data_file)
 
     for img_data in data:
-        img_file = TRAIN_DIR + class_name.upper() + '/' + img_data['filename']
+        # Shark and yft have different 'filename'
+        if class_name == "shark" or class_name == "yft":
+            img_file = TRAIN_DIR + class_name.upper() + '/' + img_data['filename'].split("/")[-1]
+        else: img_file = TRAIN_DIR + class_name.upper() + '/' + img_data['filename']
         img = cv2.imread(img_file)
         # Crop only images with both heads and tails present for cleaner dataset
-        if len(img_data['annotations']) >= 2:
-            p_heads = (img_data['annotations'][0]['x'], img_data['annotations'][0]['y'])
-            p_tails = (img_data['annotations'][1]['x'], img_data['annotations'][1]['y'])
-            p_middle = ((p_heads[0] + p_tails[0]) / 2, (p_heads[1] + p_tails[1]) / 2)
+        if len(img_data['annotations']) >= 1:
+            p_tails = (img_data['annotations'][0]['x'], img_data['annotations'][0]['y'])
+            p_heads = (img_data['annotations'][0]['x'] +
+                    img_data['annotations'][0]['width'],
+                    img_data['annotations'][0]['y'] +
+                    img_data['annotations'][0]['height'])
+            p_middle = ((p_heads[0] + p_tails[0]) / 2, (p_heads[1] +
+                p_tails[1]) / 2)
             dist = np.sqrt((p_heads[0] - p_tails[0]) ** 2 + (p_heads[1] - p_tails[1]) ** 2)
             offset = 3.0 * dist / 4.0
             img_width = img.shape[1]
@@ -40,9 +45,52 @@ def process_labels(label_file):
             y_down = min(img_height - 1, p_middle[1] + offset)
             x_left, x_right, y_up, y_down = int(x_left), int(x_right), int(y_up), int(y_down)
             img = img[y_up:y_down+1, x_left:x_right+1, :]
-            cv2.imwrite(OUTPUT_DIR + class_name.upper() + '/' + img_data['filename'], img)
+            if class_name == "shark" or class_name == "yft":
+                cv2.imwrite(OUTPUT_DIR + class_name.upper() + '/' +
+                        img_data['filename'].split("/")[-1], img)
+            else: cv2.imwrite(OUTPUT_DIR + class_name.upper() + '/' +
+                    img_data['filename'], img)
+        else:
+            if class_name == "shark" or class_name == "yft":
+                shutil.copyfile(TRAIN_DIR + class_name.upper() + '/' +
+                        img_data['filename'].split("/")[-1], OUTPUT_DIR + class_name.upper() +
+                        '/' + img_data['filename'].split("/")[-1])
+            else:
+                shutil.copyfile(TRAIN_DIR + class_name.upper() + '/' +
+                        img_data['filename'], OUTPUT_DIR + class_name.upper() +
+                        '/' + img_data['filename'])
+
+def make_cropped_dataset():
+    label_files = glob.glob(ANNOS_DIR + '*.json')
+    for file in label_files:
+        process_annos(file)
+
+def copy_nofish():
+    if not os.path.isdir(OUTPUT_DIR + "NoF"):
+        shutil.copytree(TRAIN_DIR + "NoF" , OUTPUT_DIR + 'NoF')
+    if not os.path.isdir(OUTPUT_DIR + "OTHER"):
+        shutil.copytree(TRAIN_DIR + "OTHER" , OUTPUT_DIR + 'OTHER')
+
+
+def separate_val():
+    df = pickle.load(open('../../data/processed/df.txt.old.bak', 'rb'))
+    for img,boat in zip(df["img_file"],df["boat_group"]):
+        #print(j.split("/")[-1])
+        classes = img.split("/")[-2]
+        basename = img.split("/")[-1]
+        if boat == 1 or boat == 5 or boat == 7 or boat == 8 or boat == 11:
+            print(basename,"  ",boat)
+            fromname='../../data/interim/train/crop/train/' + classes
+            toname='../../data/interim/train/crop/val/'+ classes
+            if not os.path.isdir(toname):
+                os.makedirs(toname)
+
+            os.rename(fromname + '/' + basename,toname + '/' + basename)
+
 
 if __name__ == '__main__':
     if not os.path.isdir(OUTPUT_DIR):
-        os.mkdir(OUTPUT_DIR)
+        os.makedirs(OUTPUT_DIR)
     make_cropped_dataset()
+    copy_nofish()
+    separate_val()

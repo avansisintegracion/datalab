@@ -244,56 +244,56 @@ class TestClassifications(object):
         #             bbox_inches='tight')
         #######################################################################
         ## xgboost
-        param_test = {'classifier__max_depth': range(3, 10, 2),
-                      'classifier__min_child_weight': range(1, 8, 2),
-                      'classifier__learning_rate': [0.001, 0.1, 0.7, 1],
-                      'classifier__n_estimators': [10, 30, 70, 100, 150],
-                      }
+        # param_test = {'classifier__max_depth': range(3, 10, 2),
+        #               'classifier__min_child_weight': range(1, 8, 2),
+        #               'classifier__learning_rate': [0.001, 0.1, 0.7, 1],
+        #               'classifier__n_estimators': [10, 30, 70, 100, 150],
+        #               }
         # param_test = {'preproc__learning_rate': [0.001, 0.1, 0.7, 1],
         #               'classifier__n_estimators': [10, 30, 70, 100, 150],
         #               }
         # param_test = {'classifier__learning_rate': [0.001, 0.1, 0.7, 1],
         #               'classifier__n_estimators': [10, 30, 70, 100, 150],
         #               }
-        # PCA(n_components=40, svd_solver='randomized')
-        results = self.CustomGridSearch(preproc=StandardScaler(),
-                              classifier=xgb.XGBClassifier(objective='multi:softmax'),
-                              param_grid=param_test
-                              )
-        param = "Parameters used :%s" % results[0]
-        resultsscore = "Logloss score on validation set : %s" % results[1]
-        log = param + '\n' + resultsscore
-        dm.logger(path=self.f.data_interim_train_crop, loglevel='info', message=log)
+        # param_test = {'classifier__n_estimators': [100, 150, 200, 250, 300],
+        #               }
+        # # PCA(n_components=40, svd_solver='randomized')
+        # results = self.CustomGridSearch(preproc=StandardScaler(),
+        #                       classifier=xgb.XGBClassifier(objective='multi:softmax'),
+        #                       param_grid=param_test
+        #                       )
+        # log = results
+        # dm.logger(path=self.f.data_interim_train_crop, loglevel='info', message=log)
         # rbm = BernoulliRBM(random_state=0, verbose=True)
         # rbm.learning_rate = 0.06
         # rbm.n_iter = 20
         # # More components tend to give better prediction performance, but larger
         # # fitting time
         # rbm.n_components = 200
+        # gamma=0.6,
+        # reg_alpha=0.4,
+        # subsample=0.6,
+        # colsample_bytree=0.8,
+        # scale_pos_weight=1,
+        # seed=70
 
-        # classifier = xgb.XGBClassifier(learning_rate=0.05,
-        #                                n_estimators=100,
-        #                                max_depth=7,
-        #                                min_child_weight=1,
-        #                                gamma=0.6,
-        #                                reg_alpha=0.4,
-        #                                subsample=0.6,
-        #                                colsample_bytree=0.8,
-        #                                objective='multi:softmax',
-        #                                nthread=6,
-        #                                scale_pos_weight=1,
-        #                                seed=70)
-        # results = self.RunOptClassif(preproc=StandardScaler(),
-        #                              classifier=classifier)
+        classifier = xgb.XGBClassifier(learning_rate=0.1,
+                                       n_estimators=300,
+                                       max_depth=9,
+                                       min_child_weight=1,
+                                       objective='multi:softmax',
+                                       gamma=5)
+        results = self.RunOptClassif(preproc=StandardScaler(),
+                                     classifier=classifier)
         # results = self.RunOptClassif(preproc=rbm,
         #                      classifier=classifier)
         # results = self.RunOptClassif(preproc=PCA(n_components=40, svd_solver='randomized'),
         #                              classifier=classifier)
-        # param = "Parameters used :%s" % results[0]
-        # resultsscore = "Logloss score on validation set : %s" % results[1]
-        # cnf_matrix = confusion_matrix(self.y_val, results[2])
-        # log = param + '\n' + resultsscore + '\nConfusion matrix :\n' + str(cnf_matrix)
-        # dm.logger(path=self.f.data_interim_train_crop, loglevel='info', message=log)
+        param = "Parameters used :%s" % results[0]
+        resultsscore = "Logloss score on validation set : %s" % results[1]
+        cnf_matrix = confusion_matrix(self.y_val, results[2])
+        log = param + '\n' + resultsscore + '\nConfusion matrix :\n' + str(cnf_matrix)
+        dm.logger(path=self.f.data_interim_train_crop, loglevel='info', message=log)
         # plt.figure(figsize=(4.2, 4))
         # for i, comp in enumerate(rbm.components_):
         #     plt.subplot(10, 20, i + 1)
