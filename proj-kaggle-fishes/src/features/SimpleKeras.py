@@ -13,8 +13,14 @@ from sklearn.metrics import log_loss
 import pandas as pd
 import numpy as np
 
+from keras import backend as K
+K.set_image_dim_ordering('tf')
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+
+PATH = "../../data/interim/train/rotatecrop/" 
+
 #PATH = "../../data/interim/train/devcrop/" 
-PATH = "../../data/interim/train/cropotsu/" 
+PATH = "../../data/interim/train/crop/" 
 MODELS = "../../models/"
 PROCESSED = "../../data/processed/"
 
@@ -28,12 +34,12 @@ trn_batch = image.ImageDataGenerator().flow_from_directory(PATH + 'train', targe
             class_mode=None, shuffle=False, batch_size=1)
 trn_np =  np.concatenate([trn_batch.next() for i in range(trn_batch.nb_sample)])
 
-val = image.ImageDataGenerator().flow_from_directory(PATH + 'valid', target_size=(224,224),
+val = image.ImageDataGenerator().flow_from_directory(PATH + 'val', target_size=(224,224),
             class_mode='categorical', shuffle=True, batch_size=4)
 val_labels = to_categorical(val.classes)
 
 # get np array for val
-val_batch = image.ImageDataGenerator().flow_from_directory(PATH + 'valid', target_size=(224,224),
+val_batch = image.ImageDataGenerator().flow_from_directory(PATH + 'val', target_size=(224,224),
             class_mode=None, shuffle=False, batch_size=1)
 val_np =  np.concatenate([val_batch.next() for i in range(val_batch.nb_sample)])
 
@@ -42,7 +48,8 @@ val_np =  np.concatenate([val_batch.next() for i in range(val_batch.nb_sample)])
 # Epoch 3/3
 # 3277/3277 [==============================] - 101s - loss: 8.8042 - acc:
 # 0.4538 - val_loss: 8.6393 - val_acc: 0.4640
-base_model = InceptionV3(weights='imagenet', include_top=False)
+base_model = InceptionV3(include_top=False, weights='imagenet',
+                    input_tensor=None, input_shape=(224, 224, 3))
 # Epoch 3/3
 # 3277/3277 [==============================] - 138s - loss: 0.1595 - acc:
 # 0.9463 - val_loss: 0.6203 - val_acc: 0.8380

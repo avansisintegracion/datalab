@@ -27,7 +27,7 @@ from keras import backend as K
 K.set_image_dim_ordering('tf')
 from IPython.core.debugger import Tracer
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 PATH = "../../data/interim/train/rotatecrop/" 
 MODELS = "../../models/"
 
@@ -110,9 +110,9 @@ class InceptionFineTuning(object):
     def FineTuning(self):
         img_width = 299
         img_height = 299
-        batch_size = 32
+        batch_size = 16
         learning_rate = 1e-3
-        nbr_epoch = 1
+        nbr_epoch = 50
         nbr_train_samples = len(glob.glob(PATH + 'train/*/*.jpg'))
         nbr_val_samples = len(glob.glob(PATH + 'val/*/*.jpg'))
         print("Parametres: img_width {}, batch_size {}, number of train {}, number of val {}".format(img_width, batch_size, nbr_train_samples, nbr_val_samples))
@@ -131,7 +131,7 @@ class InceptionFineTuning(object):
                 target_size = (img_width, img_height),
                 batch_size = batch_size,
                 shuffle = True,
-                save_to_dir = PATH + 'TransfTrain/',
+                #save_to_dir = PATH + 'TransfTrain/',
                 #save_prefix = 'aug',
                 classes = self.classes,
                 class_mode = 'categorical')
@@ -144,7 +144,7 @@ class InceptionFineTuning(object):
             target_size=(img_width, img_height),
             batch_size=batch_size,
             shuffle = True,
-            save_to_dir = PATH + 'TransfVal/',
+            #save_to_dir = PATH + 'TransfVal/',
             #save_prefix = 'aug',
             classes = self.classes,
             class_mode = 'categorical')
