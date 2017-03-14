@@ -28,7 +28,7 @@ K.set_image_dim_ordering('tf')
 from IPython.core.debugger import Tracer
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-PATH = "../../data/interim/train/rotatecrop/" 
+PATH = "../../data/interim/train/rotatecrop/"
 MODELS = "../../models/"
 
 from src.data import DataModel as dm
@@ -72,7 +72,7 @@ class InceptionFineTuning(object):
         plt.cla()
 
 
-    def plot_confusion_matrix(self, cm, 
+    def plot_confusion_matrix(self, cm,
                               normalize=False,
                               title='Confusion matrix',
                               cmap=plt.cm.Blues):
@@ -116,6 +116,15 @@ class InceptionFineTuning(object):
         nbr_train_samples = len(glob.glob(PATH + 'train/*/*.jpg'))
         nbr_val_samples = len(glob.glob(PATH + 'val/*/*.jpg'))
         print("Parametres: img_width {}, batch_size {}, number of train {}, number of val {}".format(img_width, batch_size, nbr_train_samples, nbr_val_samples))
+
+        # compensate unbalanced classes
+        cl_size = {}
+        for cl in self.classes:
+            cl_size[cl] = len(glob.glob(op.join(self.f.data_interim_train_rotatecrop_train, cl, '*.jpg')))
+
+        class_weight = {}
+        for k, v in cl_size.iteritems():
+            class_weight[k] = cl_size['ALB'] / float(cl_size[k])
 
         # Transformation for train
         train_datagen = image.ImageDataGenerator(rescale=1./255,
@@ -178,17 +187,18 @@ class InceptionFineTuning(object):
 
         model.fit_generator(
                 trn_generator,
-                samples_per_epoch = nbr_train_samples,
-                nb_epoch = nbr_epoch,
-                validation_data = val_generator,
-                nb_val_samples = nbr_val_samples,
-                callbacks = callbacks_list)
+                samples_per_epoch=nbr_train_samples,
+                nb_epoch=nbr_epoch,
+                validation_data=val_generator,
+                nb_val_samples=nbr_val_samples,
+                class_weight = class_weight,
+                callbacks=callbacks_list)
 
         # Use the best model epoch
         print("--- Starting prediction %.1f seconds ---" % (time.time() - start_time))
         InceptionV3_model = load_model(SaveModelName)
 
-        # Data augmentation for prediction 
+        # Data augmentation for prediction
         nbr_augmentation = 5
         val_datagen = image.ImageDataGenerator(
                 rescale=1./255,
@@ -218,7 +228,7 @@ class InceptionFineTuning(object):
 
         preds /= nbr_augmentation
 
-        # Get label for max probability 
+        # Get label for max probability
         pred_labels_one = [ pred.argmax() for pred in preds ]
 
         # Plot confusion matrix
@@ -239,4 +249,3 @@ class InceptionFineTuning(object):
 if __name__ == '__main__':
     os.chdir(op.dirname(op.abspath(__file__)))
     InceptionFineTuning().FineTuning()
-
