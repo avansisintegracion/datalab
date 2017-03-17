@@ -58,7 +58,7 @@ class GetFeatures(object):
         self.imagetype = imagetype
         self.alldescriptors = {'o': dict(),
                                'f': op.dirname(self.sfeatures['f']),
-                                            'alldescriptors.txt')}
+                                'alldescriptors.txt')}
         self.keras_features = []
         self.kfeatures = []
         self.hogdescriptors = []

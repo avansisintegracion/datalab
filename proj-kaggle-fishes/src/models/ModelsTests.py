@@ -35,6 +35,10 @@ INTERIM = '../../data/interim'
 PROCESSED = '../../data/processed'
 
 
+def open_dump(path, textfile):
+    return pickle.load(open(os.path.join(path, textfile), 'rb'))
+
+
 class TestClassifications(object):
     '''Classification optimization'''
     def __init__(self, ifeatures, sfeatures, projectfolder, imagetype):
@@ -45,6 +49,7 @@ class TestClassifications(object):
         with open(op.join(self.f.data_processed, 'training_images.json'), 'rb') as file:
             self.training_img = json.load(file)
         try:
+            print('load trainring')
             self.ifeatures['o'] = pickle.load(open(self.ifeatures['f'], 'rb'))
             self.sfeatures['o'] = pickle.load(open(self.sfeatures['f'], 'rb'))
             self.ifeatures['p'] = pd.DataFrame.from_dict(self.ifeatures['o'],
@@ -287,6 +292,7 @@ class TestClassifications(object):
                                      classifier=classifier)
         # results = self.RunOptClassif(preproc=rbm,
         #                      classifier=classifier)
+
         # results = self.RunOptClassif(preproc=PCA(n_components=40, svd_solver='randomized'),
         #                              classifier=classifier)
         param = "Parameters used :%s" % results[0]
@@ -329,4 +335,6 @@ if __name__ == '__main__':
                                imagetype='imgrotatecrop')
     test.split_data()
     # test.split_data_img()
+    test = TestClassifications()
+    test.split_data()
     test.testAll()

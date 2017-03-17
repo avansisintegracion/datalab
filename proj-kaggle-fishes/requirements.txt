@@ -24,3 +24,9 @@ math
 cv2>=3.2.0
 xgboost
 re
+tensorflow-gpu
+sklearn
+pandas
+ipdb
+opencv
+h5py
