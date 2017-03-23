@@ -192,11 +192,27 @@ class CropBoundingBoxes(object):
 #        self.separate_val()
 #        self.crop_multiple_fish()
 
+    def separate_val_devcrop(self):
+        print('Separating validation from train')
+        for k, img in self.training_img.iteritems():
+            if img['validation'] is True:
+                fromname = op.join(self.f.data_interim_train_devcrop_train, img['fishtype'])
+                toname = op.join(self.f.data_interim_train_devcrop_val, img['fishtype'])
+                if not os.path.isdir(toname):
+                    os.makedirs(toname)
+                try: 
+                    os.rename(op.join(fromname, img['imgname']),
+                            op.join(toname, img['imgname']))
+                except:
+                    pass
+                    #print("Separation not found for", img['imgname'])
+
 if __name__ == '__main__':
     os.chdir(op.dirname(op.abspath(__file__)))
-    #CropBoundingBoxes().main()
+    CropBoundingBoxes().main()
     CropBoundingBoxes().make_cropped_dataset()
     CropBoundingBoxes().copy_nofish()
     CropBoundingBoxes().relabel()
     CropBoundingBoxes().separate_val()
     CropBoundingBoxes().crop_multiple_fish()
+    #CropBoundingBoxes().separate_val_devcrop()

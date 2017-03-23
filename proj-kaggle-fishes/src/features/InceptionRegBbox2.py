@@ -13,7 +13,7 @@ from keras.callbacks import EarlyStopping, CSVLogger, ReduceLROnPlateau, ModelCh
 from keras.optimizers import SGD, RMSprop, Adam
 from keras.utils.np_utils import to_categorical
 from sklearn.metrics import log_loss, confusion_matrix
-from itertools import chain
+from itertools import chain, islice
 import matplotlib as mpl
 mpl.use('Agg')
 import matplotlib.pyplot as plt
@@ -23,13 +23,16 @@ import itertools
 import os
 import os.path as op
 import glob
+import PIL
 from keras import backend as K
 K.set_image_dim_ordering('tf')
-from IPython.core.debugger import Tracer
+import ipdb
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-PATH = "../../data/interim/train/crop/"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+PATH = "../../data/interim/train/devcrop/" 
 MODELS = "../../models/"
+seed = 7
+np.random.seed(seed)
 
 from src.data import DataModel as dm
 
@@ -72,7 +75,7 @@ class InceptionFineTuning(object):
         plt.cla()
 
 
-    def plot_confusion_matrix(self, cm,
+    def plot_confusion_matrix(self, cm, 
                               normalize=False,
                               title='Confusion matrix',
                               cmap=plt.cm.Blues):
@@ -110,40 +113,36 @@ class InceptionFineTuning(object):
     def FineTuning(self):
         img_width = 299
         img_height = 299
-        batch_size = 8
+        batch_size = 32
         learning_rate = 1e-3
-        nbr_epoch = 50
-        nbr_train_samples = len(glob.glob(PATH + 'train/*/*.jpg'))
-        nbr_val_samples = len(glob.glob(PATH + 'val/*/*.jpg'))
+        nbr_epoch = 1
+        nbr_train_samples = len(glob.glob(PATH + 'train/*/*.jpg'))/batch_size*batch_size
+        nbr_val_samples = len(glob.glob(PATH + 'val/*/*.jpg'))/batch_size*batch_size
+
         print("Parametres: img_width {}, batch_size {}, number of train {}, number of val {}".format(img_width, batch_size, nbr_train_samples, nbr_val_samples))
 
-        # compensate unbalanced classes
-        cl_size = {}
-        for cl in self.classes:
-            cl_size[cl] = len(glob.glob(op.join(self.f.data_interim_train_rotatecrop_train, cl, '*.jpg')))
-
-        class_weight = {}
-        for k, v in cl_size.iteritems():
-            class_weight[k] = cl_size['ALB'] / float(cl_size[k])
-
         # Transformation for train
-        train_datagen = image.ImageDataGenerator(rescale=1./255,
-                shear_range=0.1,
-                zoom_range=0.1,
-                rotation_range=10.,
-                width_shift_range=0.1,
-                height_shift_range=0.1,
-                horizontal_flip=True)
+        train_datagen = image.ImageDataGenerator(rescale=1./255,)
+                #shear_range=0.1,
+                #zoom_range=0.1,
+                #rotation_range=10.,
+                #width_shift_range=0.1,
+                #height_shift_range=0.1,
+                #horizontal_flip=True)
 
         trn_generator = train_datagen.flow_from_directory(
                 PATH + 'train',
                 target_size = (img_width, img_height),
                 batch_size = batch_size,
-                shuffle = True,
+                shuffle = False,
                 #save_to_dir = PATH + 'TransfTrain/',
                 #save_prefix = 'aug',
-                classes = self.classes,
-                class_mode = 'categorical')
+                #classes = self.classes,
+                class_mode = None,
+                seed = seed)
+
+
+        #trn_np =  np.concatenate([trn_generator.next() for i in range(trn_generator.nb_sample)])
 
         # Transformation for validation set
         val_datagen = image.ImageDataGenerator(rescale=1./255)
@@ -152,30 +151,85 @@ class InceptionFineTuning(object):
             PATH + 'val',
             target_size=(img_width, img_height),
             batch_size=batch_size,
-            shuffle = True,
+            shuffle = False,
             #save_to_dir = PATH + 'TransfVal/',
             #save_prefix = 'aug',
-            classes = self.classes,
-            class_mode = 'categorical')
+            #classes = self.classes,
+            class_mode = None,
+            seed = seed)
 
+        filenames = trn_generator.filenames
+        val_filenames = val_generator.filenames
 
+        ### Bounding boxes & multi output
+        import ujson as json
+        #anno_classes = ['alb', 'bet', 'dol', 'lag', 'shark', 'yft']
+        anno_classes = glob.glob(op.join(self.f.data_external_annos, '*.json' ))
+
+        bb_json = {}
+        for c in anno_classes:
+            j = json.load(open(op.join(c), 'r'))
+            for l in j:
+                if 'annotations' in l.keys() and len(l['annotations'])>0:
+                    bb_json[l['filename'].split('/')[-1]] = sorted(
+                        l['annotations'], key=lambda x: x['height']*x['width'])[-1]
+
+        ## Get python raw filenames
+        raw_filenames = [f.split('/')[-1] for f in filenames]
+        raw_val_filenames = [f.split('/')[-1] for f in val_filenames]
+
+        ## Image that have no annotation, empty bounding box
+        empty_bbox = {'height': 0., 'width': 0., 'x': 0., 'y': 0.}
+
+        for f in raw_filenames:
+            if not f in bb_json.keys(): bb_json[f] = empty_bbox
+
+        for f in raw_val_filenames:
+            if not f in bb_json.keys(): bb_json[f] = empty_bbox
+        # 
+        ## The sizes of images can be related to ship sizes. Get sizes for raw image
+        sizes = [PIL.Image.open(PATH+'train/'+f).size for f in filenames]
+        raw_val_sizes = [PIL.Image.open(PATH+'val/'+f).size for f in val_filenames]
+
+        ## Convert dictionary into array
+        bb_params = ['height', 'width', 'x', 'y']
+        def convert_bb(bb, size):
+            bb = [bb[p] for p in bb_params]
+            conv_x = (img_width /float(size[0]))
+            conv_y = (img_height / float(size[1]))
+            bb[0] = max((bb[0]+bb[3])*conv_y, 0)
+            bb[1] = max((bb[1]+bb[2])*conv_x, 0)
+            bb[2] = max(bb[2]*conv_x, 0)
+            bb[3] = max(bb[3]*conv_y, 0)
+            #ipdb.set_trace()
+            return bb
+
+        ## Tranform box in terms of defined compressed image size (224)
+        trn_bbox = np.stack([convert_bb(bb_json[f], s) for f,s in zip(raw_filenames, sizes)],).astype(np.float32)
+        val_bbox = np.stack([convert_bb(bb_json[f], s) for f,s in zip(raw_val_filenames, raw_val_sizes)],).astype(np.float32)
+
+        
         print('Loading InceptionV3 Weights ...')
         base_model = InceptionV3(include_top=False, weights='imagenet',
                             input_tensor=None, input_shape=(299, 299, 3))
         # Note that the preprocessing of InceptionV3 is:
         # (x / 255 - 0.5) x 2
 
-        print("--- Adding on top layers %.1f seconds ---" % (time.time() - start_time))
-        output = base_model.get_layer(index = -1).output  # Shape: (8, 8, 2048)
-        output = AveragePooling2D((8, 8), strides=(8, 8), name='avg_pool')(output)
+        print("--- Adding on top layers %.1f seconds ---" % (time.time() -
+                                                             start_time))
+        output = base_model.get_layer(index=-1).output  # Shape: (8, 8, 2048)
+        output = AveragePooling2D((8, 8), strides=(8, 8),
+                                  name='avg_pool')(output)
         output = Flatten(name='flatten')(output)
-        #output = Dense(512, activation='relu')(output) # Not improvement
-        output = Dense(8, activation='softmax', name='predictions')(output)
+        output = Dense(4, activation='linear', name='bb')(output)
+        # output = Dense(8, activation='softmax', name='predictions')(output)
 
         model = Model(base_model.input, output)
 
-        optimizer = SGD(lr = learning_rate, momentum = 0.9, decay = 0.0, nesterov = True)
-        model.compile(loss='categorical_crossentropy', optimizer = optimizer, metrics = ['accuracy'])
+        optimizer = SGD(lr=learning_rate, momentum=0.9, decay=0.0,
+                        nesterov=True)
+        model.compile(loss='categorical_crossentropy', optimizer=optimizer,
+                      metrics=['accuracy'], loss_weights=[.001])
         #print(model.summary())
 
         earlistop = EarlyStopping(monitor='val_loss', min_delta=0, patience=0, verbose=1, mode='auto')
@@ -185,20 +239,50 @@ class InceptionFineTuning(object):
         best_model = ModelCheckpoint(SaveModelName, monitor='val_acc', verbose = 1, save_best_only = True)
         callbacks_list = [earlistop, csv_logger, reduce_lr, best_model]
 
+        # def generator_labels():
+        #    for line in trn_bbox:
+        #        # create numpy arrays of input data
+        #        # and labels, from each line in the file
+        #        y = process_line(line)
+        #        yield (line)
+
+        # train_generator = zip(trn_generator, iter(trn_bbox))
+        # trn_bbox_generator = (n for n in trn_bbox)
+
+        def batch(iterable, n=1):
+            l = len(iterable)
+            for ndx in range(0, l, n):
+                yield iterable[ndx:min(ndx + n, l)]
+
+        trn_bbox_generator = (n for n in batch(trn_bbox, batch_size))
+        val_bbox_generator = (n for n in batch(val_bbox, batch_size))
+        train_generator = itertools.izip(trn_generator, trn_bbox_generator)
+        validation_generator = itertools.izip(val_generator, val_bbox_generator)
+
+        #ipdb.set_trace()
+
+        # model.fit_generator(
+        #        trn_generator,
+        #        samples_per_epoch = nbr_train_samples,
+        #        nb_epoch = nbr_epoch,
+        #        validation_data = val_generator,
+        #        nb_val_samples = nbr_val_samples,
+        #        callbacks = callbacks_list)
+
         model.fit_generator(
-                trn_generator,
+                train_generator,
                 samples_per_epoch=nbr_train_samples,
-                nb_epoch=nbr_epoch,
-                validation_data=val_generator,
-                nb_val_samples=nbr_val_samples,
-                class_weight = 'auto',
-                callbacks=callbacks_list)
+                nb_epoch=nbr_epoch)
+        #validation_data = validation_generator,
+        #nb_val_samples = nbr_val_samples)
+        #        callbacks = callbacks_list)
+
 
         # Use the best model epoch
         print("--- Starting prediction %.1f seconds ---" % (time.time() - start_time))
         InceptionV3_model = load_model(SaveModelName)
 
-        # Data augmentation for prediction
+        # Data augmentation for prediction 
         nbr_augmentation = 5
         val_datagen = image.ImageDataGenerator(
                 rescale=1./255,
@@ -228,7 +312,7 @@ class InceptionFineTuning(object):
 
         preds /= nbr_augmentation
 
-        # Get label for max probability
+        # Get label for max probability 
         pred_labels_one = [ pred.argmax() for pred in preds ]
 
         # Plot confusion matrix
@@ -249,3 +333,4 @@ class InceptionFineTuning(object):
 if __name__ == '__main__':
     os.chdir(op.dirname(op.abspath(__file__)))
     InceptionFineTuning().FineTuning()
+
