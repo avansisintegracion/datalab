@@ -24,6 +24,7 @@ import os
 import os.path as op
 import glob
 import PIL
+import cv2
 from keras import backend as K
 K.set_image_dim_ordering('tf')
 import ipdb
@@ -115,9 +116,9 @@ class InceptionFineTuning(object):
         img_height = 299
         batch_size = 32
         learning_rate = 1e-3
-        nbr_epoch = 1
-        nbr_train_samples = len(glob.glob(PATH + 'train/*/*.jpg'))/batch_size*batch_size
-        nbr_val_samples = len(glob.glob(PATH + 'val/*/*.jpg'))/batch_size*batch_size
+        nbr_epoch = 50
+        nbr_train_samples =  len(glob.glob(PATH + 'train/*/*.jpg')) #/batch_size*batch_size
+        nbr_val_samples = len(glob.glob(PATH + 'val/*/*.jpg')) #/batch_size*batch_size
 
         print("Parametres: img_width {}, batch_size {}, number of train {}, number of val {}".format(img_width, batch_size, nbr_train_samples, nbr_val_samples))
 
@@ -254,10 +255,44 @@ class InceptionFineTuning(object):
             for ndx in range(0, l, n):
                 yield iterable[ndx:min(ndx + n, l)]
 
-        trn_bbox_generator = (n for n in batch(trn_bbox, batch_size))
-        val_bbox_generator = (n for n in batch(val_bbox, batch_size))
+        trn_bbox_generator = (n for n in itertools.cycle(batch(trn_bbox, n=batch_size)))
+        val_bbox_generator = (n for n in itertools.cycle(batch(val_bbox, n=batch_size)))
         train_generator = itertools.izip(trn_generator, trn_bbox_generator)
         validation_generator = itertools.izip(val_generator, val_bbox_generator)
+
+        def create_rect(bb, color='red'):
+            x0 = bb[2]
+            y0 = bb[3]
+            x1 = bb[1]
+            y1 = bb[0]
+            diff = (x1 - x0)  - (y1 - y0)
+            if diff > 0:
+                x_left = x0
+                x_right = x1
+                y_up = max(y0 - diff/2,0)
+                y_down = y1 + diff/2
+            else:
+                x_left = max(x0 - abs(diff)/2,0)
+                x_right = x1 + abs(diff)/2
+                y_up = y0
+                y_down = y1
+
+            return plt.Rectangle((x0, y0), abs(x1-x0), abs(y1-y0), color=color, fill=False, lw=1)
+
+
+        #fig, ax = plt.subplots(2, 4, sharex=False, sharey=False)
+        #img_bb = val_generator.next()
+        #for i in range(8):
+        #    #img = trn_generator.next()[i]
+        #    #img1 = train_generator.next()[0][i]
+        #    #bb = trn_bbox_generator.next()[i]
+        #    #bb1 = train_generator.next()[1][i]
+        #    ax[i/4, i%4].imshow(img_bb[0][i], interpolation='nearest')
+        #    ax[i/4, i%4].axis('off')
+        #    ax[i/4, i%4].add_patch(create_rect(img_bb[1][i]))
+        #    
+        #    
+        #plt.savefig("generator_photos.jpg")
 
         #ipdb.set_trace()
 
@@ -272,15 +307,17 @@ class InceptionFineTuning(object):
         model.fit_generator(
                 train_generator,
                 samples_per_epoch=nbr_train_samples,
-                nb_epoch=nbr_epoch)
-        #validation_data = validation_generator,
-        #nb_val_samples = nbr_val_samples)
-        #        callbacks = callbacks_list)
+                nb_epoch=nbr_epoch,
+                validation_data=validation_generator,
+                nb_val_samples=nbr_val_samples,
+                callbacks=callbacks_list)
 
 
         # Use the best model epoch
         print("--- Starting prediction %.1f seconds ---" % (time.time() - start_time))
         InceptionV3_model = load_model(SaveModelName)
+
+        InceptionV3_model.evaluate_generator(validation_generator, nbr_val_samples)
 
         # Data augmentation for prediction 
         nbr_augmentation = 5
@@ -312,22 +349,20 @@ class InceptionFineTuning(object):
 
         preds /= nbr_augmentation
 
-        # Get label for max probability 
-        pred_labels_one = [ pred.argmax() for pred in preds ]
+        def restore_box(bb, size):
+            conv_x = (float(size[0]) / float(img_width))
+            conv_y = (float(size[1]) / float(img_height))
+            bb[0] = float(bb[0])*conv_y
+            bb[1] = float(bb[1])*conv_x
+            bb[2] = float(bb[2])*conv_x
+            bb[3] = float(bb[3])*conv_y
+            return(bb)
 
-        # Plot confusion matrix
-        cnf_matrix = confusion_matrix(val_generator.classes, pred_labels_one)
-        plt.figure()
-        self.plot_confusion_matrix(cnf_matrix,
-                                   normalize=False,
-                                   title='Confusion matrix')
-        plt.savefig(PATH + 'cmInceptionCropSmall.png',
-                    bbox_inches='tight')
+        bb_test_restore = np.stack([restore_box(bb, s) for bb,s in zip(preds, raw_val_sizes) ])
 
-        # Plot probability distribution
-        df = pd.DataFrame(preds)
-        df.columns = self.classes
-        self.ProbabilityDistribution(df)
+        # Restore bbox on test
+        bbtest = pd.DataFrame(bb_test_restore, index=raw_val_filenames)
+        bbtest.to_csv('bbox.csv')
         print("--- End %.1f seconds ---" % (time.time() - start_time))
 
 if __name__ == '__main__':
