@@ -25,6 +25,7 @@ import os.path as op
 import glob
 import PIL
 import cv2
+import json
 from keras import backend as K
 K.set_image_dim_ordering('tf')
 import ipdb
@@ -49,6 +50,10 @@ class InceptionFineTuning(object):
                         'OTHER',
                         'SHARK',
                         'YFT']
+        with open(op.join(self.f.data_processed, 'training_images.json'), 'rb') as file:
+            self.training_img = json.load(file)
+        with open(op.join(self.f.data_processed, 'test_images.json'), 'rb') as file:
+            self.test_img = json.load(file)
 
     def ProbabilityDistribution(self,df):
         f, ((ax1, ax2, ax3, ax4), (ax5, ax6, ax7, ax8)) = plt.subplots(2, 4, sharex='col', sharey='row')
@@ -112,13 +117,16 @@ class InceptionFineTuning(object):
 
 
     def FineTuning(self):
-        img_width = 299
-        img_height = 299
-        batch_size = 32
+        img_width = 640
+        img_height = 360
+        batch_size = 16
         learning_rate = 1e-3
         nbr_epoch = 50
-        nbr_train_samples =  len(glob.glob(PATH + 'train/*/*.jpg')) #/batch_size*batch_size
         nbr_val_samples = len(glob.glob(PATH + 'val/*/*.jpg')) #/batch_size*batch_size
+        #nbr_val_samples = sum(1 for k in self.training_img.values() if k.get('validation'))
+        nbr_train_samples = len(glob.glob(PATH + 'train/*/*.jpg')) #/batch_size*batch_size
+        #nbr_train_samples =  len(self.training_img) - nbr_val_samples
+        nbr_test_samples = len(self.test_img)
 
         print("Parametres: img_width {}, batch_size {}, number of train {}, number of val {}".format(img_width, batch_size, nbr_train_samples, nbr_val_samples))
 
@@ -133,7 +141,7 @@ class InceptionFineTuning(object):
 
         trn_generator = train_datagen.flow_from_directory(
                 PATH + 'train',
-                target_size = (img_width, img_height),
+                target_size = (img_height, img_width),
                 batch_size = batch_size,
                 shuffle = False,
                 #save_to_dir = PATH + 'TransfTrain/',
@@ -150,7 +158,7 @@ class InceptionFineTuning(object):
 
         val_generator = val_datagen.flow_from_directory(
             PATH + 'val',
-            target_size=(img_width, img_height),
+            target_size=(img_height, img_width),
             batch_size=batch_size,
             shuffle = False,
             #save_to_dir = PATH + 'TransfVal/',
@@ -192,16 +200,28 @@ class InceptionFineTuning(object):
         sizes = [PIL.Image.open(PATH+'train/'+f).size for f in filenames]
         raw_val_sizes = [PIL.Image.open(PATH+'val/'+f).size for f in val_filenames]
 
+        counter=0
+        for a in bb_json.values():
+            if float(a['height']) < 1.:
+                counter +=1
+
+        print('number of empty box: ', counter)
+
         ## Convert dictionary into array
+        ##               0       1       2    3
         bb_params = ['height', 'width', 'x', 'y']
         def convert_bb(bb, size):
             bb = [bb[p] for p in bb_params]
             conv_x = (img_width /float(size[0]))
             conv_y = (img_height / float(size[1]))
-            bb[0] = max((bb[0]+bb[3])*conv_y, 0)
-            bb[1] = max((bb[1]+bb[2])*conv_x, 0)
-            bb[2] = max(bb[2]*conv_x, 0)
-            bb[3] = max(bb[3]*conv_y, 0)
+            bb[0] = max((bb[0]+bb[3])*conv_y, 0) # y1
+            bb[1] = max((bb[1]+bb[2])*conv_x, 0) # x1
+            bb[2] = max(bb[2]*conv_x, 0) # x0
+            bb[3] = max(bb[3]*conv_y, 0) # y0
+            #bb[0] = bb[0]*conv_y # y1
+            #bb[1] = bb[1]*conv_x # x1
+            #bb[2] = max(bb[2]*conv_x, 0) # x0
+            #bb[3] = max(bb[3]*conv_y, 0) # y0
             #ipdb.set_trace()
             return bb
 
@@ -212,7 +232,7 @@ class InceptionFineTuning(object):
         
         print('Loading InceptionV3 Weights ...')
         base_model = InceptionV3(include_top=False, weights='imagenet',
-                            input_tensor=None, input_shape=(299, 299, 3))
+                            input_tensor=None, input_shape=(img_height, img_width, 3))
         # Note that the preprocessing of InceptionV3 is:
         # (x / 255 - 0.5) x 2
 
@@ -229,7 +249,7 @@ class InceptionFineTuning(object):
 
         optimizer = SGD(lr=learning_rate, momentum=0.9, decay=0.0,
                         nesterov=True)
-        model.compile(loss='categorical_crossentropy', optimizer=optimizer,
+        model.compile(loss='mse', optimizer=optimizer,
                       metrics=['accuracy'], loss_weights=[.001])
         #print(model.summary())
 
@@ -261,38 +281,32 @@ class InceptionFineTuning(object):
         validation_generator = itertools.izip(val_generator, val_bbox_generator)
 
         def create_rect(bb, color='red'):
-            x0 = bb[2]
+            #height = bb[0] 
+            #width = bb[1]
+            #x = bb[2]
+            #y = bb[3]
+            #return plt.Rectangle((x, y), width, height, color=color, fill=False, lw=1)
+            x0 = bb[2] 
             y0 = bb[3]
-            x1 = bb[1]
-            y1 = bb[0]
-            diff = (x1 - x0)  - (y1 - y0)
-            if diff > 0:
-                x_left = x0
-                x_right = x1
-                y_up = max(y0 - diff/2,0)
-                y_down = y1 + diff/2
-            else:
-                x_left = max(x0 - abs(diff)/2,0)
-                x_right = x1 + abs(diff)/2
-                y_up = y0
-                y_down = y1
-
-            return plt.Rectangle((x0, y0), abs(x1-x0), abs(y1-y0), color=color, fill=False, lw=1)
+            width = abs(bb[1] - bb[2])
+            height = abs(bb[0] - bb[3])
+            return plt.Rectangle((x0, y0), width, height, color=color, fill=False, lw=1)
 
 
-        #fig, ax = plt.subplots(2, 4, sharex=False, sharey=False)
-        #img_bb = val_generator.next()
-        #for i in range(8):
-        #    #img = trn_generator.next()[i]
-        #    #img1 = train_generator.next()[0][i]
-        #    #bb = trn_bbox_generator.next()[i]
-        #    #bb1 = train_generator.next()[1][i]
-        #    ax[i/4, i%4].imshow(img_bb[0][i], interpolation='nearest')
-        #    ax[i/4, i%4].axis('off')
-        #    ax[i/4, i%4].add_patch(create_rect(img_bb[1][i]))
-        #    
-        #    
-        #plt.savefig("generator_photos.jpg")
+        fig, ax = plt.subplots(2, 4, sharex=False, sharey=False)
+        img_bb = validation_generator.next()
+        for i in range(8):
+            #img = trn_generator.next()[i]
+            #img1 = train_generator.next()[0][i]
+            #bb = trn_bbox_generator.next()[i]
+            #bb1 = train_generator.next()[1][i]
+            ax[i/4, i%4].imshow(img_bb[0][i], interpolation='nearest')
+            ax[i/4, i%4].axis('off')
+            ax[i/4, i%4].add_patch(create_rect(img_bb[1][i]))
+            fig.subplots_adjust(hspace=0,wspace=0)
+            
+            
+        plt.savefig("generator_photos.jpg")
 
         #ipdb.set_trace()
 
@@ -304,48 +318,43 @@ class InceptionFineTuning(object):
         #        nb_val_samples = nbr_val_samples,
         #        callbacks = callbacks_list)
 
-        model.fit_generator(
-                train_generator,
-                samples_per_epoch=nbr_train_samples,
-                nb_epoch=nbr_epoch,
-                validation_data=validation_generator,
-                nb_val_samples=nbr_val_samples,
-                callbacks=callbacks_list)
+        #model.fit_generator(
+        #        train_generator,
+        #        samples_per_epoch=nbr_train_samples,
+        #        nb_epoch=nbr_epoch,
+        #        validation_data=validation_generator,
+        #        nb_val_samples=nbr_val_samples,
+        #        callbacks=callbacks_list)
 
 
         # Use the best model epoch
         print("--- Starting prediction %.1f seconds ---" % (time.time() - start_time))
-        InceptionV3_model = load_model(SaveModelName)
+        model = load_model(SaveModelName)
 
-        InceptionV3_model.evaluate_generator(validation_generator, nbr_val_samples)
+        print(model.evaluate_generator(validation_generator, nbr_val_samples))
 
         # Data augmentation for prediction 
         nbr_augmentation = 5
-        val_datagen = image.ImageDataGenerator(
-                rescale=1./255,
-                shear_range=0.1,
-                zoom_range=0.1,
-                width_shift_range=0.1,
-                height_shift_range=0.1,
-                horizontal_flip=True)
+        test_datagen = image.ImageDataGenerator(rescale=1./255)
+
         for idx in range(nbr_augmentation):
             print('{}th augmentation for testing ...'.format(idx))
             random_seed = np.random.random_integers(0, 100000)
 
-            val_generator = val_datagen.flow_from_directory(
-                    PATH + 'val',
-                    target_size=(img_width, img_height),
+            test_generator = test_datagen.flow_from_directory(
+                    op.join(self.f.data_interim_train_devcrop_test),
+                    target_size=(img_height, img_width),
                     batch_size=batch_size,
                     shuffle = False, # Important !!!
                     seed = random_seed,
-                    classes = None,
+                    #classes = None,
                     class_mode = None)
 
             print('Begin to predict for testing data ...')
             if idx == 0:
-                preds = model.predict_generator(val_generator, nbr_val_samples)
+                preds = model.predict_generator(test_generator, nbr_test_samples)
             else:
-                preds += model.predict_generator(val_generator, nbr_val_samples)
+                preds += model.predict_generator(test_generator, nbr_test_samples)
 
         preds /= nbr_augmentation
 
@@ -358,11 +367,14 @@ class InceptionFineTuning(object):
             bb[3] = float(bb[3])*conv_y
             return(bb)
 
-        bb_test_restore = np.stack([restore_box(bb, s) for bb,s in zip(preds, raw_val_sizes) ])
+        test_filenames = test_generator.filenames
+        raw_test_filenames = [f.split('/')[-1] for f in test_filenames]
+        raw_test_sizes = [PIL.Image.open(op.join(self.f.data_raw_test,f)).size for f in raw_test_filenames]
+        bb_test_restore = np.stack([restore_box(bb, s) for bb,s in zip(preds, raw_test_sizes) ])
 
         # Restore bbox on test
-        bbtest = pd.DataFrame(bb_test_restore, index=raw_val_filenames)
-        bbtest.to_csv('bbox.csv')
+        bbtest = pd.DataFrame(bb_test_restore, index=raw_test_filenames)
+        bbtest.to_csv(op.join(self.f.data_processed, 'bbox.csv'))
         print("--- End %.1f seconds ---" % (time.time() - start_time))
 
 if __name__ == '__main__':

@@ -109,7 +109,7 @@ class ProjFolder(objdict):
                     'data_interim_train_rotatecrop_' + subfol,
                     op.join(self.data_interim_train_rotatecrop, subfol))
 
-        for subfol in ['train', 'val']:
+        for subfol in ['train', 'val', 'test']:
             setattr(self,
                     'data_interim_train_devcrop_' + subfol,
                     op.join(self.data_interim_train_devcrop, subfol))

@@ -7,7 +7,7 @@ import numpy as np
 import shutil
 import pickle
 import os.path as op
-
+import pandas as pd
 import ipdb
 
 from src.data import DataModel as dm
@@ -26,6 +26,8 @@ class CropBoundingBoxes(object):
                         'YFT']
         with open(op.join(self.f.data_processed, 'training_images.json'), 'rb') as file:
             self.training_img = json.load(file)
+        with open(op.join(self.f.data_processed, 'test_images.json'), 'rb') as file:
+            self.test_img = json.load(file)
 
     def process_annos(self, label_file):
         file_name = os.path.basename(label_file)
@@ -207,12 +209,51 @@ class CropBoundingBoxes(object):
                     pass
                     #print("Separation not found for", img['imgname'])
 
+    def crop_test(self):
+        column_name = ['image', 'y1', 'x1', 'x0', 'y0']
+        bb_box = pd.read_csv(op.join(self.f.data_processed, 'bbox.csv'), names=
+                             column_name, sep=',', index_col = False, header=0)
+
+        for img_data in bb_box.iterrows():
+            img_file = op.join(self.f.data_raw_test, str(img_data[1]['image']))
+            img = cv2.imread(img_file)
+            x0 = max(int(img_data[1]['x0']), 0)
+            y0 = max(int(img_data[1]['y0']), 0)
+            x1 = max(int(img_data[1]['x1']), 0)
+            y1 = max(int(img_data[1]['y1']), 0)
+
+            if (x1 - x0) > 10 or (y1 - y0) > 10:
+                diff = (x1 - x0)  - (y1 - y0)
+                if diff > 0:
+                    x_left = x0
+                    x_right = x1
+                    y_up = max(y0 - diff/2,0)
+                    y_down = y1 + diff/2
+                else:
+                    x_left = max(x0 - abs(diff)/2,0)
+                    x_right = x1 + abs(diff)/2
+                    y_up = y0
+                    y_down = y1
+
+                #print(img_file, x_left,x_right,y_up,y_down,diff )
+                img = img[y_up:y_down, x_left:x_right, :]
+                cv2.imwrite(op.join(self.f.data_interim_test,
+                                    img_data[1]['image']), img)
+
+            else:
+                shutil.copyfile(op.join(self.f.data_raw_test,
+                                        img_data[1]['image']),
+                                op.join(self.f.data_interim_test,
+                                        img_data[1]['image']))
+
+
 if __name__ == '__main__':
     os.chdir(op.dirname(op.abspath(__file__)))
-    CropBoundingBoxes().main()
-    CropBoundingBoxes().make_cropped_dataset()
-    CropBoundingBoxes().copy_nofish()
-    CropBoundingBoxes().relabel()
-    CropBoundingBoxes().separate_val()
-    CropBoundingBoxes().crop_multiple_fish()
+    #CropBoundingBoxes().main()
+    #CropBoundingBoxes().make_cropped_dataset()
+    #CropBoundingBoxes().copy_nofish()
+    #CropBoundingBoxes().relabel()
+    #CropBoundingBoxes().separate_val()
+    #CropBoundingBoxes().crop_multiple_fish()
     #CropBoundingBoxes().separate_val_devcrop()
+    CropBoundingBoxes().crop_test()
