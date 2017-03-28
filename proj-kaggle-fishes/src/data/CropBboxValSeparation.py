@@ -210,7 +210,7 @@ class CropBoundingBoxes(object):
                     #print("Separation not found for", img['imgname'])
 
     def crop_test(self):
-        column_name = ['image', 'y1', 'x1', 'x0', 'y0']
+        column_name = ['image', 'y1', 'x1', 'x0', 'y0', 'fish']
         bb_box = pd.read_csv(op.join(self.f.data_processed, 'bbox.csv'), names=
                              column_name, sep=',', index_col = False, header=0)
 
@@ -222,7 +222,7 @@ class CropBoundingBoxes(object):
             x1 = max(int(img_data[1]['x1']), 0)
             y1 = max(int(img_data[1]['y1']), 0)
 
-            if (x1 - x0) > 10 or (y1 - y0) > 10:
+            if ((x1 - x0) > 140 or (y1 - y0) > 140) and (img_data[1]['fish'] > 0.5):
                 diff = (x1 - x0)  - (y1 - y0)
                 if diff > 0:
                     x_left = x0
@@ -241,6 +241,7 @@ class CropBoundingBoxes(object):
                                     img_data[1]['image']), img)
 
             else:
+                print(img_data[1]['fish'])
                 shutil.copyfile(op.join(self.f.data_raw_test,
                                         img_data[1]['image']),
                                 op.join(self.f.data_interim_test,

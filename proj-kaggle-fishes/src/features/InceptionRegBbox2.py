@@ -10,7 +10,7 @@ import glob
 import PIL
 import time
 import ujson as json
-# import ipdb
+import ipdb
 from keras.applications.inception_v3 import InceptionV3
 # from keras.applications.vgg16 import VGG16
 # from keras.applications.resnet50 import ResNet50
@@ -21,7 +21,7 @@ from keras.callbacks import (EarlyStopping, CSVLogger, ReduceLROnPlateau,
                              ModelCheckpoint)
 from keras.optimizers import SGD
 from src.data import DataModel as dm
-# from keras.utils.np_utils import to_categorical
+from keras.utils.np_utils import to_categorical
 from keras import backend as K
 print(time.ctime())  # Current time
 start_time = time.time()
@@ -66,64 +66,72 @@ class InceptionFineTuning(object):
         output = AveragePooling2D((8, 8), strides=(8, 8),
                                   name='avg_pool')(output)
         output = Flatten(name='flatten')(output)
-        output = Dense(4, activation='linear', name='bb')(output)
+        x_bb = Dense(4, name='bb')(output)
+        x_fish = Dense(1, activation='sigmoid', name='fish')(output)
 
-        model = Model(base_model.input, output)
+        #model = Model(base_model.input, x_bb)
+        #model = Model(base_model.input, x_fish)
+        model = Model(base_model.input, [x_bb, x_fish])
 
         optimizer = SGD(lr=learning_rate, momentum=0.9, decay=0.0,
                         nesterov=True)
-        model.compile(loss='mse', optimizer=optimizer,
-                      metrics=['accuracy'], loss_weights=[.001])
+        model.compile(loss=['mse', 'binary_crossentropy'],
+                      optimizer=optimizer, metrics=['accuracy'],
+                      loss_weights=[.001, 1.])
+        #model.compile(loss='mse', optimizer=optimizer,
+        #              metrics=['accuracy'], loss_weights=[.001])
+        #model.compile(loss='binary_crossentropy', optimizer=optimizer,
+        #              metrics=['accuracy'], loss_weights=[1.])
         # print(model.summary())
 
-        earlistop = EarlyStopping(monitor='val_loss', min_delta=0, patience=0,
+        earlistop = EarlyStopping(monitor='val_bb_acc', min_delta=0, patience=0,
                                   verbose=1, mode='auto')
         csv_logger = CSVLogger(op.join(self.f.data_interim_train_devcrop,
                                        'trainingInceptionCropSmall.log'))
-        reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1,
+        reduce_lr = ReduceLROnPlateau(monitor='val_bb_loss', factor=0.1,
                                       patience=1, verbose=1, min_lr=1e-5)
-        SaveModelName = MODELS + "InceptionV3.h5"
-        best_model = ModelCheckpoint(SaveModelName, monitor='val_acc',
+        SaveModelName = MODELS + "InceptionV3BboxFish.h5"
+        best_model = ModelCheckpoint(SaveModelName, monitor='val_bb_acc',
                                      verbose=1, save_best_only=True)
         callbacks_list = [earlistop, csv_logger, reduce_lr, best_model]
 
         # Testing bbox figure ----------------
 
-        def create_rect(bb, color='red'):
-            # height = bb[0]
-            # width = bb[1]
-            # x = bb[2]
-            # y = bb[3]
-            # return plt.Rectangle((x, y), width, height, color=color, fill=False,
-            # lw=1)
-            x0 = bb[2]
-            y0 = bb[3]
-            width = abs(bb[1] - bb[2])
-            height = abs(bb[0] - bb[3])
-            return plt.Rectangle((x0, y0), width, height, color=color, fill=False,
-                                 lw=1)
+        #def create_rect(bb, color='red'):
+        #    # height = bb[0]
+        #    # width = bb[1]
+        #    # x = bb[2]
+        #    # y = bb[3]
+        #    # return plt.Rectangle((x, y), width, height, color=color, fill=False,
+        #    # lw=1)
+        #    x0 = bb[2]
+        #    y0 = bb[3]
+        #    width = abs(bb[1] - bb[2])
+        #    height = abs(bb[0] - bb[3])
+        #    return plt.Rectangle((x0, y0), width, height, color=color, fill=False,
+        #                         lw=1)
 
-        fig, ax = plt.subplots(2, 4, sharex=False, sharey=False)
-        img_bb = validation_generator.next()
-        for i in range(8):
-            ax[i/4, i % 4].imshow(img_bb[0][i], interpolation='nearest')
-            ax[i/4, i % 4].axis('off')
-            ax[i/4, i % 4].add_patch(create_rect(img_bb[1][i]))
-            fig.subplots_adjust(hspace=0, wspace=0)
+        #fig, ax = plt.subplots(2, 4, sharex=False, sharey=False)
+        #img_bb = validation_generator.next()
+        #for i in range(8):
+        #    ax[i/4, i % 4].imshow(img_bb[0][i], interpolation='nearest')
+        #    ax[i/4, i % 4].axis('off')
+        #    ax[i/4, i % 4].add_patch(create_rect(img_bb[1][i]))
+        #    fig.subplots_adjust(hspace=0, wspace=0)
 
-        plt.savefig("generator_photos.jpg")
+        #plt.savefig("generator_photos.jpg")
 
         # Testing bbox figure ----------------
 
         # ipdb.set_trace()
 
-        #model.fit_generator(
-        #        train_generator,
-        #        samples_per_epoch=nbr_train_samples,
-        #        nb_epoch=nbr_epoch,
-        #        validation_data=validation_generator,
-        #        nb_val_samples=nbr_val_samples,
-        #        callbacks=callbacks_list)
+        model.fit_generator(
+                train_generator,
+                samples_per_epoch=nbr_train_samples,
+                nb_epoch=nbr_epoch,
+                validation_data=validation_generator,
+                nb_val_samples=nbr_val_samples,
+                callbacks=callbacks_list)
 
         print("--- Training model %.1f seconds ---" % (time.time() -
                                                        start_time))
@@ -156,10 +164,13 @@ class InceptionFineTuning(object):
                 preds = model.predict_generator(test_generator,
                                                 nbr_test_samples)
             else:
-                preds += model.predict_generator(test_generator,
-                                                 nbr_test_samples)
+                preds[0] += model.predict_generator(test_generator,
+                                                 nbr_test_samples)[0]
+                preds[1] += model.predict_generator(test_generator,
+                                                 nbr_test_samples)[1]
 
-        preds /= nbr_augmentation
+        preds_bb = preds[0]/nbr_augmentation
+        preds_fish = preds[1]/nbr_augmentation
 
         def restore_box(bb, size):
             conv_x = (float(size[0]) / float(img_width))
@@ -173,17 +184,18 @@ class InceptionFineTuning(object):
         test_filenames = test_generator.filenames
         raw_test_filenames = [f.split('/')[-1] for f in test_filenames]
         raw_test_sizes = [PIL.Image.open(op.join(self.f.data_raw_test, f)).size for f in raw_test_filenames]
-        bb_test_restore = np.stack([restore_box(bb, s) for bb, s in zip(preds, raw_test_sizes)])
+        bb_test_restore = np.stack([restore_box(bb, s) for bb, s in zip(preds_bb, raw_test_sizes)])
 
         # Restore bbox on test
-        bbtest = pd.DataFrame(bb_test_restore, index=raw_test_filenames)
+        bbtest = pd.DataFrame(np.concatenate((bb_test_restore, preds_fish),
+                                             axis=1), index=raw_test_filenames)
         bbtest.to_csv(op.join(self.f.data_processed, 'bbox.csv'))
         print("--- End %.1f seconds ---" % (time.time() - start_time))
 
     def Process(self):
-        img_width = 640
-        img_height = 360
-        batch_size = 16
+        img_width = 299
+        img_height = 299
+        batch_size = 8
         nbr_val_samples = len(glob.glob(PATH + 'val/*/*.jpg')) #/batch_size*batch_size
         # nbr_val_samples = sum(1 for k in self.training_img.values() if k.get('validation'))
         nbr_train_samples = len(glob.glob(PATH + 'train/*/*.jpg')) #/batch_size*batch_size
@@ -286,18 +298,31 @@ class InceptionFineTuning(object):
                              zip(raw_val_filenames,
                                  raw_val_sizes)],).astype(np.float32)
 
-        def batch(iterable, n=1):
-            l = len(iterable)
-            for ndx in range(0, l, n):
-                yield iterable[ndx:min(ndx + n, l)]
+        # 4NoFish and 5Other
+        trn_fish_labels = np.asarray([ 0 if ( fish == 4 ) else 1 for fish in trn_generator.classes ])
+        val_fish_labels = np.asarray([ 0 if ( fish == 4 ) else 1 for fish in val_generator.classes ])
 
-        trn_bbox_generator = (n for n in itertools.cycle(batch(trn_bbox,
+        #trn_fish_generator = (n for n in itertools.cycle(batch(trn_fish_labels,
+        #                                                       n=batch_size)))
+        #val_fish_generator = (n for n in itertools.cycle(batch(val_fish_labels,
+        #                                                       n=batch_size)))
+
+        def batch(iterable1, iterable2, n=1):
+            l1 = len(iterable1)
+            l2 = len(iterable2)
+            for ndx in range(0, l2, n):
+                #yield iterable1[ndx:min(ndx + n, l1)]
+                yield [iterable1[ndx:min(ndx + n, l1)], iterable2[ndx:min(ndx + n, l2)]]
+
+        trn_bbox_generator = (n for n in itertools.cycle(batch(trn_bbox, trn_fish_labels,
                                                                n=batch_size)))
-        val_bbox_generator = (n for n in itertools.cycle(batch(val_bbox,
+        val_bbox_generator = (n for n in itertools.cycle(batch(val_bbox, val_fish_labels,
                                                                n=batch_size)))
+
+
         train_generator = itertools.izip(trn_generator, trn_bbox_generator)
-        validation_generator = itertools.izip(val_generator,
-                                              val_bbox_generator)
+        validation_generator = itertools.izip(val_generator, val_bbox_generator)
+        #ipdb.set_trace()
 
         model, SaveModelName = self.TrainModel(train_generator,
                                                validation_generator,
