@@ -27,7 +27,7 @@ print(time.ctime())  # Current time
 start_time = time.time()
 K.set_image_dim_ordering('tf')
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 PATH = "../../data/interim/train/devcrop/" 
 MODELS = "../../models/"
 seed = 7
@@ -193,8 +193,8 @@ class InceptionFineTuning(object):
         print("--- End %.1f seconds ---" % (time.time() - start_time))
 
     def Process(self):
-        img_width = 299
-        img_height = 299
+        img_width = 640
+        img_height = 360
         batch_size = 8
         nbr_val_samples = len(glob.glob(PATH + 'val/*/*.jpg')) #/batch_size*batch_size
         # nbr_val_samples = sum(1 for k in self.training_img.values() if k.get('validation'))

@@ -25,10 +25,10 @@ import os.path as op
 import glob
 from keras import backend as K
 K.set_image_dim_ordering('tf')
-from IPython.core.debugger import Tracer
+import ipdb
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-PATH = "../../data/interim/train/crop/"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+PATH = "../../data/interim/train/devcrop/"
 MODELS = "../../models/"
 
 from src.data import DataModel as dm
@@ -137,7 +137,7 @@ class InceptionFineTuning(object):
 
         trn_generator = train_datagen.flow_from_directory(
                 PATH + 'train',
-                target_size = (img_width, img_height),
+                target_size=(img_height, img_width),
                 batch_size = batch_size,
                 shuffle = True,
                 #save_to_dir = PATH + 'TransfTrain/',
@@ -150,7 +150,7 @@ class InceptionFineTuning(object):
 
         val_generator = val_datagen.flow_from_directory(
             PATH + 'val',
-            target_size=(img_width, img_height),
+            target_size=(img_height, img_width),
             batch_size=batch_size,
             shuffle = True,
             #save_to_dir = PATH + 'TransfVal/',
@@ -161,7 +161,8 @@ class InceptionFineTuning(object):
 
         print('Loading InceptionV3 Weights ...')
         base_model = InceptionV3(include_top=False, weights='imagenet',
-                            input_tensor=None, input_shape=(299, 299, 3))
+                                 input_tensor=None, input_shape=(img_height,
+                                                                 img_width, 3))
         # Note that the preprocessing of InceptionV3 is:
         # (x / 255 - 0.5) x 2
 
@@ -198,9 +199,57 @@ class InceptionFineTuning(object):
         print("--- Starting prediction %.1f seconds ---" % (time.time() - start_time))
         InceptionV3_model = load_model(SaveModelName)
 
-        # Data augmentation for prediction
+        # Validation - Data augmentation for prediction
+        #nbr_augmentation = 5
+        #val_datagen = image.ImageDataGenerator(
+        #        rescale=1./255,
+        #        shear_range=0.1,
+        #        zoom_range=0.1,
+        #        width_shift_range=0.1,
+        #        height_shift_range=0.1,
+        #        horizontal_flip=True)
+        #for idx in range(nbr_augmentation):
+        #    print('{}th augmentation for testing ...'.format(idx))
+        #    random_seed = np.random.random_integers(0, 100000)
+
+        #    val_generator = val_datagen.flow_from_directory(
+        #            PATH + 'val',
+        #            target_size=(img_height, img_width),
+        #            batch_size=batch_size,
+        #            shuffle = False, # Important !!!
+        #            seed = random_seed,
+        #            classes = None,
+        #            class_mode = None)
+
+        #    print('Begin to predict for testing data ...')
+        #    if idx == 0:
+        #        preds = model.predict_generator(val_generator, nbr_val_samples)
+        #    else:
+        #        preds += model.predict_generator(val_generator, nbr_val_samples)
+
+        #preds /= nbr_augmentation
+
+        ## Get label for max probability
+        #pred_labels_one = [ pred.argmax() for pred in preds ]
+
+        ## Plot confusion matrix
+        #cnf_matrix = confusion_matrix(val_generator.classes, pred_labels_one)
+        #plt.figure()
+        #self.plot_confusion_matrix(cnf_matrix,
+        #                           normalize=False,
+        #                           title='Confusion matrix')
+        #plt.savefig(PATH + 'cmInceptionCropSmall.png',
+        #            bbox_inches='tight')
+
+        ## Plot probability distribution
+        #df = pd.DataFrame(preds)
+        #df.columns = self.classes
+        #self.ProbabilityDistribution(df)
+
+        # Test prediction Data agumentation
+        nbr_test_samples = 1000
         nbr_augmentation = 5
-        val_datagen = image.ImageDataGenerator(
+        test_datagen = image.ImageDataGenerator(
                 rescale=1./255,
                 shear_range=0.1,
                 zoom_range=0.1,
@@ -211,39 +260,30 @@ class InceptionFineTuning(object):
             print('{}th augmentation for testing ...'.format(idx))
             random_seed = np.random.random_integers(0, 100000)
 
-            val_generator = val_datagen.flow_from_directory(
-                    PATH + 'val',
-                    target_size=(img_width, img_height),
+            test_generator = test_datagen.flow_from_directory(
+                    PATH + 'test',
+                    target_size=(img_height, img_width),
                     batch_size=batch_size,
-                    shuffle = False, # Important !!!
-                    seed = random_seed,
-                    classes = None,
-                    class_mode = None)
+                    shuffle=False, # Important !!!
+                    seed=random_seed,
+                    classes=None,
+                    class_mode=None)
 
             print('Begin to predict for testing data ...')
             if idx == 0:
-                preds = model.predict_generator(val_generator, nbr_val_samples)
+                preds = model.predict_generator(test_generator, nbr_test_samples)
             else:
-                preds += model.predict_generator(val_generator, nbr_val_samples)
+                preds += model.predict_generator(test_generator, nbr_test_samples)
 
         preds /= nbr_augmentation
 
-        # Get label for max probability
-        pred_labels_one = [ pred.argmax() for pred in preds ]
+        test_filenames = test_generator.filenames
+        raw_test_filenames = [f.split('/')[-1] for f in test_filenames]
 
-        # Plot confusion matrix
-        cnf_matrix = confusion_matrix(val_generator.classes, pred_labels_one)
-        plt.figure()
-        self.plot_confusion_matrix(cnf_matrix,
-                                   normalize=False,
-                                   title='Confusion matrix')
-        plt.savefig(PATH + 'cmInceptionCropSmall.png',
-                    bbox_inches='tight')
-
-        # Plot probability distribution
-        df = pd.DataFrame(preds)
+        df = pd.DataFrame(preds, index=raw_test_filenames)
         df.columns = self.classes
-        self.ProbabilityDistribution(df)
+        df.index.name = 'image'
+        df.to_csv(op.join(self.f.data_processed, 'classification_inceptionv3.csv'))
         print("--- End %.1f seconds ---" % (time.time() - start_time))
 
 if __name__ == '__main__':
