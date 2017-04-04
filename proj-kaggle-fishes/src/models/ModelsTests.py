@@ -14,6 +14,7 @@ from mahotas.features import surf
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
@@ -132,7 +133,27 @@ class TestClassifications(object):
         plt.xlabel('Predicted label')
         return
 
+    def split_data_random(self):
+        """
+        This method aims at randomly splitting between training/validation
+        using the classical train_test_split function.
+        """
+        X_data = list()
+        y_data = list()
+        for k, img in self.training_img.iteritems():
+                X_data.append(self.features.loc[k, ].values)
+                y_data.append(img['fishtype'])
+        X_data = np.array(self.X_data)
+        self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(
+            X_data, y_data, test_size=0.4, random_state=0)
+        return
+
     def split_data(self):
+        """
+        This method uses custom designed validation tag in order to split
+        images taking into account the boat status, ie. validation set contains
+        pictures from boats that were never seen in the training set.
+        """
         for k, img in self.training_img.iteritems():
             if img['validation'] is False:
                 self.X_train.append(self.features.loc[k, ].values)
@@ -146,8 +167,17 @@ class TestClassifications(object):
         return
 
     def split_data_img(self):
+        """
+        This method uses custom designed validation tag in order to split
+        images taking into account the boat status, ie. validation set contains
+        pictures from boats that were never seen in the training set.
+        To be used for convnet where we need pictures directly into the net.
+        """
         for k, img in self.training_img.iteritems():
-            im = resize(io.imread(img[self.imagetype], as_grey=True), (250, 250)).ravel()
+            if self.imagetype == 'raw':
+                im = resize(io.imread(op.join(img['imgpath'], img['imgname']), as_grey=True), (250, 250)).ravel()
+            else:
+                im = resize(io.imread(img[self.imagetype], as_grey=True), (250, 250)).ravel()
             if img['validation'] is False:
                 self.X_train.append(im)
                 self.y_train.append(img['fishtype'])
@@ -299,7 +329,7 @@ class TestClassifications(object):
         resultsscore = "Logloss score on validation set : %s" % results[1]
         cnf_matrix = confusion_matrix(self.y_val, results[2])
         log = param + '\n' + resultsscore + '\nConfusion matrix :\n' + str(cnf_matrix)
-        dm.logger(path=self.f.data_interim_train_crop, loglevel='info', message=log)
+        dm.logger(path=self.f.data_interim_train_raw, loglevel='info', message=log)
         # plt.figure(figsize=(4.2, 4))
         # for i, comp in enumerate(rbm.components_):
         #     plt.subplot(10, 20, i + 1)
@@ -315,25 +345,26 @@ class TestClassifications(object):
         # dm.logger(path=self.f.data_interim_train_crop, loglevel='info', message=cnf_matrix)
         # np.set_printoptions(precision=2)
         # Plot normalized confusion matrix
-        # plt.figure()
-        # self.plot_confusion_matrix(cnf_matrix,
-        #                            classes=self.classes,
-        #                            normalize=False,
-        #                            title='Confusion matrix')
-        # plt.savefig(os.path.join(INTERIM, 'XGBoost_withotsu_confusion_matrix.png'),
-        #             bbox_inches='tight')
+        plt.figure()
+        self.plot_confusion_matrix(cnf_matrix,
+                                   classes=self.classes,
+                                   normalize=False,
+                                   title='Confusion matrix')
+        plt.savefig(os.path.join(INTERIM, 'XGBoost_withotsu_confusion_matrix_raw_images.png'),
+                    bbox_inches='tight')
 
 
 if __name__ == '__main__':
     os.chdir(op.dirname(op.abspath(__file__)))
     projectfolder = dm.ProjFolder()
     test = TestClassifications(ifeatures={'o': dict(),
-                                          'f': op.join(projectfolder.data_interim_train_rotatecrop, 'rifeatures.txt')},
+                                          'f': op.join(projectfolder.data_interim_train_raw, 'fifeatures.txt')},
                                sfeatures={'o': dict(),
-                                          'f': op.join(projectfolder.data_interim_train_rotatecrop, 'rsfeatures.txt')},
+                                          'f': op.join(projectfolder.data_interim_train_raw, 'fsfeatures.txt')},
                                projectfolder=projectfolder,
-                               imagetype='imgrotatecrop')
-    test.split_data()
+                               imagetype='raw')
+    test.split_data_random()
+    #test.split_data()
     # test.split_data_img()
     test = TestClassifications()
     test.split_data()

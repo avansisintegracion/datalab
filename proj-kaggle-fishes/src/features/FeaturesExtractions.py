@@ -57,8 +57,7 @@ class GetFeatures(object):
         self.sfeatures = sfeatures
         self.imagetype = imagetype
         self.alldescriptors = {'o': dict(),
-                               'f': op.dirname(self.sfeatures['f']),
-                                'alldescriptors.txt')}
+                               'f': op.join(op.dirname(self.sfeatures['f']), 'alldescriptors.txt')}
         self.keras_features = []
         self.kfeatures = []
         self.hogdescriptors = []
@@ -114,7 +113,10 @@ class GetFeatures(object):
             sys.exit(1)
 
         for id, im in self.images.iteritems():
-            yield im[self.imagetype], id
+            if self.imagetype == 'raw':
+                yield op.join(im['imgpath'], im['imgname']), id
+            else:
+                yield im[self.imagetype], id
 
     def wholeImage(self):
         print('Computing whole-image texture features...')
@@ -400,6 +402,14 @@ class GetFeatures(object):
 if __name__ == '__main__':
     os.chdir(op.dirname(op.abspath(__file__)))
     projectfolder = dm.ProjFolder()
+    projectfolder.make_folder()
+    fullimage = GetFeatures(ifeatures={'o': dict(),
+                                       'f': op.join(projectfolder.data_interim_train_raw, 'fifeatures.txt')},
+                            sfeatures={'o': dict(),
+                                        'f': op.join(projectfolder.data_interim_train_raw, 'fsfeatures.txt')},
+                            projectfolder=projectfolder,
+                            imagetype='raw')
+    fullimage.main()
     # crop = GetFeatures(ifeatures={'o': dict(),
     #                               'f': op.join(projectfolder.data_interim_train_crop, 'ifeatures.txt')},
     #                    sfeatures={'o': dict(),
@@ -407,12 +417,12 @@ if __name__ == '__main__':
     #                                 'sfeatures.txt')},
     #                    projectfolder=projectfolder))
     # crop.main()
-    rotatecrop = GetFeatures(ifeatures={'o': dict(),
-                                        'f': op.join(projectfolder.data_interim_train_rotatecrop, 'rifeatures.txt')},
-                             sfeatures={'o': dict(),
-                                        'f': op.join(projectfolder.data_interim_train_rotatecrop, 'rsfeatures.txt')},
-                             projectfolder=projectfolder,
-                             imagetype='imgrotatecrop')
-    rotatecrop.main()
+    # rotatecrop = GetFeatures(ifeatures={'o': dict(),
+    #                                     'f': op.join(projectfolder.data_interim_train_rotatecrop, 'rifeatures.txt')},
+    #                          sfeatures={'o': dict(),
+    #                                     'f': op.join(projectfolder.data_interim_train_rotatecrop, 'rsfeatures.txt')},
+    #                          projectfolder=projectfolder,
+    #                          imagetype='imgrotatecrop')
+    # rotatecrop.main()
     # GetFeatures(basedir=op.join(INTERIM, 'train', 'generated'),
     #             subfol=['train']).main()

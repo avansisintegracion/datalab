@@ -54,6 +54,9 @@ def removekey(d, key):
 
 class objdict(dict):
     """Initial class to create dict like objects"""
+    def __init__(self, *args, **kwargs):
+        self.__dict__ = self
+
     def __getattr__(self, name):
         if name in self:
             return self[name]
@@ -94,7 +97,7 @@ class ProjFolder(objdict):
                     'data_interim_' + subfol,
                     op.join(self.data_interim, subfol))
 
-        for subfol in ['crop', 'generated', 'rotatecrop']:
+        for subfol in ['crop', 'generated', 'rotatecrop', 'raw']:
             setattr(self,
                     'data_interim_train_' + subfol,
                     op.join(self.data_interim_train, subfol))
@@ -120,6 +123,11 @@ class ProjFolder(objdict):
             setattr(self,
                     'data_raw_' + subfol,
                     op.join(self.data_raw, subfol))
+
+    def make_folder(self):
+        for directory in self.values():
+            if not op.exists(directory):
+                os.makedirs(directory)
 
 
 class CustomSplit():
