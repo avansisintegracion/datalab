@@ -162,7 +162,8 @@ class TestClassifications(object):
         """
         for k, img in self.training_img.iteritems():
             if self.imagetype == 'raw':
-                im = resize(io.imread(op.join(img['imgpath'], img['imgname']), as_grey=True), (250, 250)).ravel()
+                im = resize(io.imread(op.join(img['imgpath'], img['imgname']),
+                            as_grey=True), (250, 250)).ravel()
             else:
                 im = resize(io.imread(img[self.imagetype], as_grey=True), (250, 250)).ravel()
             if img['validation'] is False:
@@ -195,7 +196,8 @@ class TestClassifications(object):
                                  ('classifier', classifier)])
         scaler_class.fit(self.X_train,
                          self.y_train,
-                         classifier__eval_set=[(self.X_train, self.y_train), (self.X_val, self.y_val)],
+                         classifier__eval_set=[(self.X_train, self.y_train),
+                                               (self.X_val, self.y_val)],
                          classifier__early_stopping_rounds=50)
         y_true, y_pred = self.y_val, scaler_class.predict_proba(self.X_val)
         # y_pred = np.clip(y_pred, 0.02, 0.98, out=None)
@@ -256,6 +258,8 @@ class predictTestImages():
     def __init__(self, projectfolder, imagetype, model):
         self.f = projectfolder
         self.imagetype = imagetype
+        with open(op.join(self.f.data_processed, 'test_images.json'), 'rb') as file:
+            self.test_img = json.load(file)
         with open(op.join(self.f.data_processed, 'test2_images.json'), 'rb') as file:
             self.test2_img = json.load(file)
         self.classes = ['ALB',
@@ -307,19 +311,38 @@ class predictTestImages():
             sfeatures = np.bincount(c, minlength=128)
             return sfeatures
 
-        features = list()
-        for k, img in self.test2_img.iteritems():
-            im = op.join(img['imgpath'], img['imgname'])
-            feat = np.hstack((wholeImage(im), SURFextractor(im)))
-            print feat.shape
-            features.append(feat)
+        try:
+            with open(op.join(self.f.data_interim_train_raw, 'features_test.dump'), 'rb') as file:
+                features1 = p.load(file)
+        except:
+            print 'Issues loading features1'
+            features1 = list()
+            for k, img in self.test_img.iteritems():
+                im = op.join(img['imgpath'], img['imgname'])
+                feat = np.hstack((wholeImage(im), SURFextractor(im)))
+                features1.append(feat)
+            features = np.vstack(features1)
+            with open(op.join(self.f.data_interim_train_raw, 'features_test.dump'), 'wb') as file:
+                p.dump(features1, file)
 
-        features = np.vstack(features)
-        print features
-        with open(op.join(self.f.data_interim_train_raw, 'features_test2.dump'), 'wb') as file:
-            p.dump(features, file)
-
-        self.model.predict_proba(features)
+        try:
+            with open(op.join(self.f.data_interim_train_raw, 'features_test2.dump'), 'rb') as file:
+                features2 = p.load(file)
+        except:
+            print 'Issues loading features2'
+            features2 = list()
+            for k, img in self.test2_img.iteritems():
+                im = op.join(img['imgpath'], img['imgname'])
+                feat = np.hstack((wholeImage(im), SURFextractor(im)))
+                features2.append(feat)
+            features = np.vstack(features2)
+            with open(op.join(self.f.data_interim_train_raw, 'features_test2.dump'), 'wb') as file:
+                p.dump(features2, file)
+        features = np.vstack((features1, features2))
+        y_pred = self.model.predict_proba(features)
+        print y_pred.shape
+        index = [self.test_img[k]['imgname'] for k in self.test_img.keys()] + ['test_stg2/' + self.test2_img[k]['imgname'] for k in self.test2_img.keys()]
+        pd.DataFrame(y_pred, index=index, columns=self.classes).to_csv(op.join(self.f.data_interim_train_raw, 'prediction_split_boat.csv'))
         return
 
 
@@ -332,9 +355,9 @@ if __name__ == '__main__':
                                           'f': op.join(projectfolder.data_interim_train_raw, 'fsfeatures.txt')},
                                projectfolder=projectfolder,
                                imagetype='raw')
-    test.split_data_random()
+    # test.split_data_random()
     # test.split_data_img()
-    # test.split_data()
+    test.split_data()
     model = test.train()
     predict_test2 = predictTestImages(projectfolder=projectfolder,
                                       imagetype='raw',
