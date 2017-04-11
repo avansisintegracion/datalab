@@ -58,6 +58,7 @@ class GetFeatures(object):
         self.imagetype = imagetype
         self.alldescriptors = {'o': dict(),
                                'f': op.join(op.dirname(self.sfeatures['f']), 'alldescriptors.txt')}
+        self.kmodel = op.join(op.dirname(self.sfeatures['f']), 'kmodel.dump')
         self.keras_features = []
         self.kfeatures = []
         self.hogdescriptors = []
@@ -176,7 +177,7 @@ class GetFeatures(object):
                 print('SURF descriptors not dumped')
         else:
             try:
-                print('SURF descriptors alreardy computed, loading..')
+                print('SURF descriptors already computed, loading..')
                 self.alldescriptors['o'] = p.load(open(self.alldescriptors['f'], 'rb'))
             except:
                 print("Issues loading alldescriptors!")
@@ -191,6 +192,8 @@ class GetFeatures(object):
         concatenated = concatenated[::64]
         print('Clustering with K-means...')
         km.fit(concatenated)
+        with open(self.kmodel, 'wb') as file:
+            p.dump(km, file)
         for id, d in self.alldescriptors['o'].iteritems():
             c = km.predict(d)
             self.sfeatures['o'][id] = np.bincount(c, minlength=k)
@@ -391,7 +394,7 @@ class GetFeatures(object):
     #     print('Otsu Descriptor computation complete.')
 
     def main(self):
-        self.wholeImage()
+        # self.wholeImage()
         self.SURFextractor()
         # self.keras_features_extraction()
         # self.HOGextractor()

@@ -1,34 +1,35 @@
-from __future__ import print_function
+"""
+"""
+
+# -*- coding: utf-8 -*-
+
 import os
 import os.path as op
-import re
 import time
 import itertools
 import json
-import pickle
-from glob import glob
 import numpy as np
 import pandas as pd
-import mahotas as mh
-from mahotas.features import surf
+import pickle as p
+
 import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
+
 from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import RandomForestClassifier
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import log_loss, confusion_matrix, accuracy_score
-from sklearn.naive_bayes import MultinomialNB
-from sklearn.ensemble import GradientBoostingClassifier
 import xgboost as xgb
-from sklearn.decomposition import PCA
-from sklearn.neural_network import BernoulliRBM
-from scipy.ndimage import convolve
 from skimage import io
 from skimage.transform import resize
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import log_loss, confusion_matrix
+
+import mahotas as mh
+from mahotas.features import surf
+from sklearn.cluster import KMeans
+import cv2
+
 
 from src.data import DataModel as dm
 
@@ -37,7 +38,7 @@ PROCESSED = '../../data/processed'
 
 
 def open_dump(path, textfile):
-    return pickle.load(open(os.path.join(path, textfile), 'rb'))
+    return p.load(open(os.path.join(path, textfile), 'rb'))
 
 
 class TestClassifications(object):
@@ -50,28 +51,14 @@ class TestClassifications(object):
         with open(op.join(self.f.data_processed, 'training_images.json'), 'rb') as file:
             self.training_img = json.load(file)
         try:
-            print('load trainring')
-            self.ifeatures['o'] = pickle.load(open(self.ifeatures['f'], 'rb'))
-            self.sfeatures['o'] = pickle.load(open(self.sfeatures['f'], 'rb'))
+            self.ifeatures['o'] = p.load(open(self.ifeatures['f'], 'rb'))
+            self.sfeatures['o'] = p.load(open(self.sfeatures['f'], 'rb'))
             self.ifeatures['p'] = pd.DataFrame.from_dict(self.ifeatures['o'],
                                                          orient='index')
             self.sfeatures['p'] = pd.DataFrame.from_dict(self.sfeatures['o'],
                                                          orient='index')
             self.features = pd.concat([self.ifeatures['p'], self.sfeatures['p']], axis=1)
             print(self.sfeatures['f'])
-            # self.hogfeatures = open_dump(INTERIM, 'train/crop/hogdescriptors.txt')
-            # self.bloblogdescriptors = open_dump(INTERIM, 'train/crop/bloblogdescriptors.txt')
-            # self.labels = open_dump(INTERIM, 'train/crop/labels.txt')
-            # self.filenames = open_dump(INTERIM, 'train/crop/filenames.txt')
-            # self.otsudescriptors = open_dump(INTERIM, 'train/crop/otsudescriptors.txt')
-            # self.kfeatures = open_dump(INTERIM, 'train/crop/otsu_kfeatures.txt')
-            # self.features = np.hstack([self.kfeatures, self.ifeatures])
-            # self.features = np.hstack([self.ifeatures, self.sfeatures])
-            # self.features = np.hstack([np.array(self.bloblogdescriptors), self.ifeatures])
-            # self.features = np.hstack([np.array(self.hogfeatures), self.ifeatures])
-            # self.features = self.otsudescriptors
-            # self.df_80 = open_dump(PROCESSED, 'df_80.txt')
-            # self.features = self.ifeatures
         except:
             print('An error occured during loading of data')
         self.X_train = []
@@ -143,7 +130,7 @@ class TestClassifications(object):
         for k, img in self.training_img.iteritems():
                 X_data.append(self.features.loc[k, ].values)
                 y_data.append(img['fishtype'])
-        X_data = np.array(self.X_data)
+        X_data = np.array(X_data)
         self.X_train, self.X_val, self.y_train, self.y_val = train_test_split(
             X_data, y_data, test_size=0.4, random_state=0)
         return
@@ -206,78 +193,15 @@ class TestClassifications(object):
     def RunOptClassif(self, preproc, classifier):
         scaler_class = Pipeline([('preproc', preproc),
                                  ('classifier', classifier)])
-        scaler_class.fit(self.X_train, self.y_train)
+        scaler_class.fit(self.X_train,
+                         self.y_train,
+                         classifier__eval_set=[(self.X_train, self.y_train), (self.X_val, self.y_val)],
+                         classifier__early_stopping_rounds=50)
         y_true, y_pred = self.y_val, scaler_class.predict_proba(self.X_val)
-        y_pred = np.clip(y_pred, 0.02, 0.98, out=None)
-        return str(classifier), log_loss(y_true, y_pred), scaler_class.predict(self.X_val)
+        # y_pred = np.clip(y_pred, 0.02, 0.98, out=None)
+        return str(classifier), log_loss(y_true, y_pred), scaler_class.predict(self.X_val), scaler_class
 
-    def testAll(self):
-        # ## LogisticRegression
-        # C_range = 10.0 ** np.arange(-4, 3)
-        # self.CustomGridSearch(preproc=StandardScaler(),
-        #                       classifier=LogisticRegression(),
-        #                       param_grid={'classifier__C': C_range}
-        #                       )
-        # classifier = LogisticRegression(C=10)
-        # results = self.RunOptClassif(preproc=StandardScaler(),
-        #                              classifier=classifier)
-        # print("Used :%s" % results[0])
-        # print("Logloss score on validation set : %s" % results[1])
-        # cnf_matrix = confusion_matrix(self.y_val, results[2])
-        # np.set_printoptions(precision=2)
-        # # Plot normalized confusion matrix
-        # plt.figure()
-        # self.plot_confusion_matrix(cnf_matrix,
-        #                            classes=self.classes,
-        #                            normalize=False,
-        #                            title='Confusion matrix')
-        # plt.savefig(os.path.join(INTERIM, 'LogisticReg_confusion_matrix.png'),
-        #             bbox_inches='tight')
-        # #######################################################################
-        # ## RandomForest
-        # N_range = [10, 30, 50, 70, 90]
-        # self.CustomGridSearch(preproc=StandardScaler(),
-        #                       classifier=RandomForestClassifier(),
-        #                       param_grid={'classifier__n_estimators': N_range}
-        #                       )
-        # classifier = RandomForestClassifier(n_estimators=50)
-        # results = self.RunOptClassif(preproc=StandardScaler(),
-        #                              classifier=classifier)
-        # print("Used :%s" % results[0])
-        # print("Logloss score on validation set : %s" % results[1])
-        # cnf_matrix = confusion_matrix(self.y_val, results[2])
-        # np.set_printoptions(precision=2)
-        # # Plot normalized confusion matrix
-        # plt.figure()
-        # self.plot_confusion_matrix(cnf_matrix,
-        #                            classes=self.classes,
-        #                            normalize=False,
-        #                            title='Confusion matrix')
-        # plt.savefig(os.path.join(INTERIM, 'RandomForest_confusion_matrix.png'),
-        #             bbox_inches='tight')
-        #######################################################################
-        ## Naive bayes
-        # alpha = 10.0 ** np.arange(-4, 3)
-        # self.CustomGridSearch(preproc=MinMaxScaler(),
-        #                       classifier=MultinomialNB(),
-        #                       param_grid={'classifier__alpha': alpha}
-        #                       )
-        # classifier = MultinomialNB(alpha=10)
-        # results = self.RunOptClassif(preproc=MinMaxScaler(),
-        #                              classifier=classifier)
-        # print("Used :%s" % results[0])
-        # print("Logloss score on validation set : %s" % results[1])
-        # cnf_matrix = confusion_matrix(self.y_val, results[2])
-        # np.set_printoptions(precision=2)
-        # # Plot normalized confusion matrix
-        # plt.figure()
-        # self.plot_confusion_matrix(cnf_matrix,
-        #                            classes=self.classes,
-        #                            normalize=False,
-        #                            title='Confusion matrix')
-        # plt.savefig(os.path.join(INTERIM, 'NaiveBayes_confusion_matrix.png'),
-        #             bbox_inches='tight')
-        #######################################################################
+    def train(self):
         ## xgboost
         # param_test = {'classifier__max_depth': range(3, 10, 2),
         #               'classifier__min_child_weight': range(1, 8, 2),
@@ -298,60 +222,105 @@ class TestClassifications(object):
         #                       param_grid=param_test
         #                       )
         # log = results
-        # dm.logger(path=self.f.data_interim_train_crop, loglevel='info', message=log)
-        # rbm = BernoulliRBM(random_state=0, verbose=True)
-        # rbm.learning_rate = 0.06
-        # rbm.n_iter = 20
-        # # More components tend to give better prediction performance, but larger
-        # # fitting time
-        # rbm.n_components = 200
-        # gamma=0.6,
-        # reg_alpha=0.4,
-        # subsample=0.6,
-        # colsample_bytree=0.8,
-        # scale_pos_weight=1,
-        # seed=70
+        # dm.logger(path=self.f.data_interim_train_crop, loglevel='info', message=log
 
         classifier = xgb.XGBClassifier(learning_rate=0.1,
-                                       n_estimators=300,
+                                       n_estimators=400,
                                        max_depth=9,
                                        min_child_weight=1,
                                        objective='multi:softmax',
+                                       reg_alpha=0.5,
                                        gamma=5)
         results = self.RunOptClassif(preproc=StandardScaler(),
                                      classifier=classifier)
-        # results = self.RunOptClassif(preproc=rbm,
-        #                      classifier=classifier)
-
-        # results = self.RunOptClassif(preproc=PCA(n_components=40, svd_solver='randomized'),
-        #                              classifier=classifier)
         param = "Parameters used :%s" % results[0]
         resultsscore = "Logloss score on validation set : %s" % results[1]
         cnf_matrix = confusion_matrix(self.y_val, results[2])
         log = param + '\n' + resultsscore + '\nConfusion matrix :\n' + str(cnf_matrix)
         dm.logger(path=self.f.data_interim_train_raw, loglevel='info', message=log)
-        # plt.figure(figsize=(4.2, 4))
-        # for i, comp in enumerate(rbm.components_):
-        #     plt.subplot(10, 20, i + 1)
-        #     plt.imshow(comp.reshape((224, 224)), cmap=plt.cm.gray_r,
-        #                interpolation='nearest')
-        #     plt.xticks(())
-        #     plt.yticks(())
-        # plt.suptitle('200 components extracted by RBM', fontsize=16)
-        # plt.subplots_adjust(0.08, 0.02, 0.92, 0.85, 0.08, 0.23)
-        # plt.savefig(os.path.join(self.f.data_interim_train_crop, 'XGBoost_RBM_features.png'),
-        #             bbox_inches='tight')
-        # dm.logger(path=self.f.data_interim_train_crop, loglevel='info', message=resultsscore)
-        # dm.logger(path=self.f.data_interim_train_crop, loglevel='info', message=cnf_matrix)
-        # np.set_printoptions(precision=2)
-        # Plot normalized confusion matrix
         plt.figure()
         self.plot_confusion_matrix(cnf_matrix,
                                    classes=self.classes,
                                    normalize=False,
                                    title='Confusion matrix')
-        plt.savefig(os.path.join(INTERIM, 'XGBoost_withotsu_confusion_matrix_raw_images.png'),
+        plt.savefig(os.path.join(INTERIM, 'XGBoost_confusion_matrix_rotatecrop_images.png'),
                     bbox_inches='tight')
+
+        model = results[3]
+        with open(op.join(self.f.data_processed, 'xgboost.model'), 'wb') as file:
+            p.dump(model, file)
+        return model
+
+
+class predictTestImages():
+    def __init__(self, projectfolder, imagetype, model):
+        self.f = projectfolder
+        self.imagetype = imagetype
+        with open(op.join(self.f.data_processed, 'test2_images.json'), 'rb') as file:
+            self.test2_img = json.load(file)
+        self.classes = ['ALB',
+                        'BET',
+                        'DOL',
+                        'LAG',
+                        'NoF',
+                        'OTHER',
+                        'SHARK',
+                        'YFT']
+        self.model = model
+        with open(op.join(self.f.data_interim_train_raw, 'kmodel.dump'), 'rb') as file:
+            self.kmodel = p.load(file)
+
+    def predict(self):
+        def chist(im):
+            im = im // 64
+            r, g, b = im.transpose((2, 0, 1))
+            pixels = 1 * r + 4 * g + 16 * b
+            hist = np.bincount(pixels.ravel(), minlength=64)
+            hist = hist.astype(float)
+            return np.log1p(hist)
+
+        def features_for(im):
+            """Extract color histogram from image"""
+            im = mh.imread(im)
+            img = mh.colors.rgb2grey(im).astype(np.uint8)
+            return np.concatenate([mh.features.haralick(img).ravel(),
+                                   chist(im)])
+
+        def wholeImage(im):
+            return np.array(features_for(im))
+
+        def SURFextractor(im):
+            img = cv2.imread(im)
+            Z = img.reshape((-1, 3))
+            Z = np.float32(Z)
+            criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
+            K = 16
+            ret,label,center=cv2.kmeans(Z,K,None,criteria,10,cv2.KMEANS_RANDOM_CENTERS)
+            center = np.uint8(center)
+            res = center[label.flatten()]
+            res2 = res.reshape((img.shape))
+            gray = cv2.cvtColor(res2, cv2.COLOR_BGR2GRAY)
+            if gray.size < 10000:
+                gray = cv2.resize(gray, (200, 200))
+            alldescriptor = surf.surf(gray, descriptor_only=True)
+            c = self.kmodel.predict(alldescriptor)
+            sfeatures = np.bincount(c, minlength=128)
+            return sfeatures
+
+        features = list()
+        for k, img in self.test2_img.iteritems():
+            im = op.join(img['imgpath'], img['imgname'])
+            feat = np.hstack((wholeImage(im), SURFextractor(im)))
+            print feat.shape
+            features.append(feat)
+
+        features = np.vstack(features)
+        print features
+        with open(op.join(self.f.data_interim_train_raw, 'features_test2.dump'), 'wb') as file:
+            p.dump(features, file)
+
+        self.model.predict_proba(features)
+        return
 
 
 if __name__ == '__main__':
@@ -364,8 +333,10 @@ if __name__ == '__main__':
                                projectfolder=projectfolder,
                                imagetype='raw')
     test.split_data_random()
-    #test.split_data()
     # test.split_data_img()
-    test = TestClassifications()
-    test.split_data()
-    test.testAll()
+    # test.split_data()
+    model = test.train()
+    predict_test2 = predictTestImages(projectfolder=projectfolder,
+                                      imagetype='raw',
+                                      model=model)
+    predict_test2.predict()

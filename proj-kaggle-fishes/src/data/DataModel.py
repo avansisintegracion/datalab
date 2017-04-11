@@ -1,3 +1,6 @@
+"""
+"""
+
 # -*- coding: utf-8 -*-
 
 import json
@@ -119,7 +122,7 @@ class ProjFolder(objdict):
         #             op.join(self.data_processed, subfol))
 
         # level data raw
-        for subfol in ['train', 'test']:
+        for subfol in ['train', 'test', 'test2']:
             setattr(self,
                     'data_raw_' + subfol,
                     op.join(self.data_raw, subfol))
@@ -258,6 +261,7 @@ class ImageList(objdict):
         self.images = list()
         self.training_img = dict()
         self.test_img = dict()
+        self.test2_img = dict()
         try:
             with open(self.f.data_processed + '/df_80.txt', 'r') as file:
                 self.df_80 = pickle.load(file)
@@ -319,14 +323,27 @@ class ImageList(objdict):
                       indent=4, separators=(',', ': '))
         return self.test_img
 
+    def test_images2(self):
+        """Iterate over all images in test"""
+        self.images = glob('{}/*.jpg'.format(self.f.data_raw_test2))
+        for im in sorted(self.images):
+            imf = ImageFile(img=im, fishtype='unknown', datatype='test2')
+            self.test2_img[imf.imgid] = removekey(imf, 'imgid')
+        with open(op.join(self.f.data_processed, 'test2_images.json'), 'wb') as file:
+            json.dump(self.test2_img, file, sort_keys=False,
+                      indent=4, separators=(',', ': '))
+        return self.test2_img
+
     def main(self):
         if op.exists(op.join(self.f.data_processed, 'training_images.json')) is False:
             self.training_images()
         if op.exists(op.join(self.f.data_processed, 'test_images.json')) is False:
             self.test_images()
+        self.test_images2()
 
 
 if __name__ == '__main__':
     os.chdir(op.dirname(op.abspath(__file__)))
+    ProjFolder().make_folder()
     test = ImageList()
     test.main()
