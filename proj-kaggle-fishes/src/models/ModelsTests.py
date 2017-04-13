@@ -200,7 +200,7 @@ class TestClassifications(object):
                                                (self.X_val, self.y_val)],
                          classifier__early_stopping_rounds=50)
         y_true, y_pred = self.y_val, scaler_class.predict_proba(self.X_val)
-        # y_pred = np.clip(y_pred, 0.02, 0.98, out=None)
+        y_pred = np.clip(y_pred, 0.05, 0.9, out=None)
         return str(classifier), log_loss(y_true, y_pred), scaler_class.predict(self.X_val), scaler_class
 
     def train(self):
@@ -342,7 +342,9 @@ class predictTestImages():
         y_pred = self.model.predict_proba(features)
         print y_pred.shape
         index = [self.test_img[k]['imgname'] for k in self.test_img.keys()] + ['test_stg2/' + self.test2_img[k]['imgname'] for k in self.test2_img.keys()]
-        pd.DataFrame(y_pred, index=index, columns=self.classes).to_csv(op.join(self.f.data_interim_train_raw, 'prediction_split_boat.csv'))
+        pred = pd.DataFrame(np.clip(y_pred, 0.05, 0.90, out=None), index=index, columns=self.classes)
+        pred = pred.reindex(pred.index.rename('image'))
+        pred.to_csv(op.join(self.f.data_interim_train_raw, 'prediction_rdn_clip.csv'))
         return
 
 
@@ -355,9 +357,9 @@ if __name__ == '__main__':
                                           'f': op.join(projectfolder.data_interim_train_raw, 'fsfeatures.txt')},
                                projectfolder=projectfolder,
                                imagetype='raw')
-    # test.split_data_random()
+    test.split_data_random()
     # test.split_data_img()
-    test.split_data()
+    # test.split_data()
     model = test.train()
     predict_test2 = predictTestImages(projectfolder=projectfolder,
                                       imagetype='raw',
