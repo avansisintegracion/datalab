@@ -27,7 +27,7 @@ print(time.ctime())  # Current time
 start_time = time.time()
 K.set_image_dim_ordering('tf')
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 PATH = "../../data/interim/train/devcrop/" 
 MODELS = "../../models/"
 seed = 7
@@ -77,7 +77,8 @@ class InceptionFineTuning(object):
                         nesterov=True)
         model.compile(loss=['mse', 'binary_crossentropy'],
                       optimizer=optimizer, metrics=['accuracy'],
-                      loss_weights=[.001, 1.])
+                      loss_weights=[0.001, 1.])
+                      #loss_weights=[.00001, 1.])
         #model.compile(loss='mse', optimizer=optimizer,
         #              metrics=['accuracy'], loss_weights=[.001])
         #model.compile(loss='binary_crossentropy', optimizer=optimizer,
@@ -97,33 +98,34 @@ class InceptionFineTuning(object):
 
         # Testing bbox figure ----------------
 
-        #def create_rect(bb, color='red'):
-        #    # height = bb[0]
-        #    # width = bb[1]
-        #    # x = bb[2]
-        #    # y = bb[3]
-        #    # return plt.Rectangle((x, y), width, height, color=color, fill=False,
-        #    # lw=1)
-        #    x0 = bb[2]
-        #    y0 = bb[3]
-        #    width = abs(bb[1] - bb[2])
-        #    height = abs(bb[0] - bb[3])
-        #    return plt.Rectangle((x0, y0), width, height, color=color, fill=False,
-        #                         lw=1)
+        def create_rect(bb, color='red'):
+            # height = bb[0]
+            # width = bb[1]
+            # x = bb[2]
+            # y = bb[3]
+            # return plt.Rectangle((x, y), width, height, color=color, fill=False,
+            # lw=1)
+            x0 = bb[0]
+            y0 = bb[1]
+            width = abs(bb[2] - bb[0])
+            height = abs(bb[3] - bb[1])
+            return plt.Rectangle((x0, y0), width, height, color=color, fill=False,
+                                 lw=1)
 
         #fig, ax = plt.subplots(2, 4, sharex=False, sharey=False)
-        #img_bb = validation_generator.next()
         #for i in range(8):
+        #    img_bb = validation_generator.next()
         #    ax[i/4, i % 4].imshow(img_bb[0][i], interpolation='nearest')
         #    ax[i/4, i % 4].axis('off')
-        #    ax[i/4, i % 4].add_patch(create_rect(img_bb[1][i]))
+        #    ax[i/4, i % 4].add_patch(create_rect(img_bb[1][0][i]))
         #    fig.subplots_adjust(hspace=0, wspace=0)
 
         #plt.savefig("generator_photos.jpg")
 
+        #ipdb.set_trace()
+
         # Testing bbox figure ----------------
 
-        # ipdb.set_trace()
 
         model.fit_generator(
                 train_generator,
@@ -175,8 +177,12 @@ class InceptionFineTuning(object):
         def restore_box(bb, size):
             conv_x = (float(size[0]) / float(img_width))
             conv_y = (float(size[1]) / float(img_height))
-            bb[0] = float(bb[0])*conv_y
-            bb[1] = float(bb[1])*conv_x
+            #bb[0] = float(bb[0])*conv_y
+            #bb[1] = float(bb[1])*conv_x
+            #bb[2] = float(bb[2])*conv_x
+            #bb[3] = float(bb[3])*conv_y
+            bb[0] = float(bb[0])*conv_x
+            bb[1] = float(bb[1])*conv_y
             bb[2] = float(bb[2])*conv_x
             bb[3] = float(bb[3])*conv_y
             return(bb)
@@ -240,20 +246,35 @@ class InceptionFineTuning(object):
         anno_classes = glob.glob(op.join(self.f.data_external_annos, '*.json'))
 
         bb_json = {}
-        for c in anno_classes:
-            j = json.load(open(op.join(c), 'r'))
-            for l in j:
-                if 'annotations' in l.keys() and len(l['annotations']) > 0:
-                    bb_json[l['filename'].split('/')[-1]] = sorted(
-                        l['annotations'], key=lambda x:
-                        x['height']*x['width'])[-1]
+        for fish_class in anno_classes:
+            fish_bb_json = json.load(open(op.join(fish_class), 'r'))
+            for fish_annotation in fish_bb_json:
+                if 'annotations' in fish_annotation.keys() and len(fish_annotation['annotations']) > 0:
+                    bb_json[fish_annotation['filename'].split('/')[-1]] = { 
+                        'x_0' : sorted(fish_annotation['annotations'], key=lambda x:
+                        x['x'])[0]['x'], 
+                        'y_0' : sorted(fish_annotation['annotations'], key=lambda x:
+                        x['y'])[0]['y'], 
+                        'x_1' : (sorted(fish_annotation['annotations'], key=lambda x:
+                        x['x']+x['width'])[-1]['x'] + sorted(fish_annotation['annotations'], key=lambda x:
+                        x['x']+x['width'])[-1]['width']),
+                        'y_1' : (sorted(fish_annotation['annotations'], key=lambda x:
+                        x['y']+x['height'])[-1]['y'] + sorted(fish_annotation['annotations'], key=lambda x:
+                        x['y']+x['height'])[-1]['width'])
+                    }
+                    #if len(fish_annotation['annotations']) > 2:
+                    #bb_json[fish_annotation['filename'].split('/')[-1]] = sorted(
+                    #    fish_annotation['annotations'], key=lambda x:
+                    #    x['height']*x['width'])[-1]
+
+        #ipdb.set_trace()
 
         # Get python raw filenames
         raw_filenames = [f.split('/')[-1] for f in filenames]
         raw_val_filenames = [f.split('/')[-1] for f in val_filenames]
 
         # Image that have no annotation, empty bounding box
-        empty_bbox = {'height': 0., 'width': 0., 'x': 0., 'y': 0.}
+        empty_bbox = {'x_0': 0., 'y_0': 0., 'x_1': 0., 'y_1': 0.}
 
         for f in raw_filenames:
             if not f in bb_json.keys(): bb_json[f] = empty_bbox
@@ -268,26 +289,27 @@ class InceptionFineTuning(object):
 
         counter = 0
         for a in bb_json.values():
-            if float(a['height']) < 1.:
+            if float(a['x_1'] - a['x_0']) < 1.:
                 counter += 1
         print('Number of empty box: ', counter)
 
         # Convert dictionary into array
         #               0       1       2    3
-        bb_params = ['height', 'width', 'x', 'y']
+        #bb_params = ['height', 'width', 'x', 'y']
+        bb_params = ['x_0', 'y_0', 'x_1', 'y_1']
 
         def convert_bb(bb, size):
             bb = [bb[p] for p in bb_params]
             conv_x = (img_width / float(size[0]))
             conv_y = (img_height / float(size[1]))
-            bb[0] = max((bb[0]+bb[3])*conv_y, 0)  # y1
-            bb[1] = max((bb[1]+bb[2])*conv_x, 0)  # x1
-            bb[2] = max(bb[2]*conv_x, 0)  # x0
-            bb[3] = max(bb[3]*conv_y, 0)  # y0
-            # bb[0] = bb[0]*conv_y # height
-            # bb[1] = bb[1]*conv_x # width
-            # bb[2] = max(bb[2]*conv_x, 0) # x0
-            # bb[3] = max(bb[3]*conv_y, 0) # y0
+            #bb[0] = max((bb[0]+bb[3])*conv_y, 0)  # y1
+            #bb[1] = max((bb[1]+bb[2])*conv_x, 0)  # x1
+            #bb[2] = max(bb[2]*conv_x, 0)  # x0
+            #bb[3] = max(bb[3]*conv_y, 0)  # y0
+            bb[0] = bb[0]*conv_x # x_0
+            bb[1] = bb[1]*conv_y # y_0
+            bb[2] = max(bb[2]*conv_x, 0) # x_1
+            bb[3] = max(bb[3]*conv_y, 0) # y_1
             # ipdb.set_trace()
             return bb
 

@@ -8,5 +8,9 @@ tensorflow-gpu
 sklearn
 pandas
 ipdb
-opencv
+opencv-python
 h5py
+keras==1.2.2
+matplotlib
+Pillow
+ujson

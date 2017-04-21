@@ -27,7 +27,7 @@ from keras import backend as K
 K.set_image_dim_ordering('tf')
 import ipdb
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 PATH = "../../data/interim/train/devcrop/"
 MODELS = "../../models/"
 
@@ -106,11 +106,10 @@ class InceptionFineTuning(object):
         plt.xlabel('Predicted label')
         return
 
-
     def FineTuning(self):
-        img_width = 299
-        img_height = 299
-        batch_size = 8
+        img_width = 900
+        img_height = 450
+        batch_size = 4
         learning_rate = 1e-3
         nbr_epoch = 50
         nbr_train_samples = len(glob.glob(PATH + 'train/*/*.jpg'))
@@ -182,7 +181,7 @@ class InceptionFineTuning(object):
         earlistop = EarlyStopping(monitor='val_loss', min_delta=0, patience=0, verbose=1, mode='auto')
         csv_logger = CSVLogger(PATH + 'trainingInceptionCropSmall.log')
         reduce_lr = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=1, verbose=1, min_lr=1e-5)
-        SaveModelName = MODELS + "InceptionV3.h5"
+        SaveModelName = MODELS + "InceptionV3Randomsplit900.h5"
         best_model = ModelCheckpoint(SaveModelName, monitor='val_acc', verbose = 1, save_best_only = True)
         callbacks_list = [earlistop, csv_logger, reduce_lr, best_model]
 
@@ -197,58 +196,63 @@ class InceptionFineTuning(object):
 
         # Use the best model epoch
         print("--- Starting prediction %.1f seconds ---" % (time.time() - start_time))
-        InceptionV3_model = load_model(SaveModelName)
+        print("Evualuate save model: log loss and accuarcy: \n ",
+              model.evaluate_generator(val_generator, nbr_val_samples))
+        model = load_model(SaveModelName)
+        print("Evualuate save model: log loss and accuarcy: \n ",
+              model.evaluate_generator(val_generator, nbr_val_samples))
 
         # Validation - Data augmentation for prediction
-        #nbr_augmentation = 5
-        #val_datagen = image.ImageDataGenerator(
-        #        rescale=1./255,
-        #        shear_range=0.1,
-        #        zoom_range=0.1,
-        #        width_shift_range=0.1,
-        #        height_shift_range=0.1,
-        #        horizontal_flip=True)
-        #for idx in range(nbr_augmentation):
-        #    print('{}th augmentation for testing ...'.format(idx))
-        #    random_seed = np.random.random_integers(0, 100000)
+        nbr_augmentation = 5
+        val_datagen = image.ImageDataGenerator(
+                rescale=1./255,
+                shear_range=0.1,
+                zoom_range=0.1,
+                width_shift_range=0.1,
+                height_shift_range=0.1,
+                horizontal_flip=True)
+        for idx in range(nbr_augmentation):
+            print('{}th augmentation for testing ...'.format(idx))
+            random_seed = np.random.randint(0, 100000)
 
-        #    val_generator = val_datagen.flow_from_directory(
-        #            PATH + 'val',
-        #            target_size=(img_height, img_width),
-        #            batch_size=batch_size,
-        #            shuffle = False, # Important !!!
-        #            seed = random_seed,
-        #            classes = None,
-        #            class_mode = None)
+            val_generator = val_datagen.flow_from_directory(
+                    PATH + 'val',
+                    target_size=(img_height, img_width),
+                    batch_size=batch_size,
+                    shuffle = False, # Important !!!
+                    seed = random_seed,
+                    #classes = None,
+                    classes = self.classes,
+                    class_mode = None)
 
-        #    print('Begin to predict for testing data ...')
-        #    if idx == 0:
-        #        preds = model.predict_generator(val_generator, nbr_val_samples)
-        #    else:
-        #        preds += model.predict_generator(val_generator, nbr_val_samples)
+            print('Begin to predict for testing data ...')
+            if idx == 0:
+                preds = model.predict_generator(val_generator, nbr_val_samples)
+            else:
+                preds += model.predict_generator(val_generator, nbr_val_samples)
 
-        #preds /= nbr_augmentation
+        preds /= nbr_augmentation
 
-        ## Get label for max probability
-        #pred_labels_one = [ pred.argmax() for pred in preds ]
+        # Get label for max probability
+        pred_labels_one = [ pred.argmax() for pred in preds ]
 
-        ## Plot confusion matrix
-        #cnf_matrix = confusion_matrix(val_generator.classes, pred_labels_one)
-        #plt.figure()
-        #self.plot_confusion_matrix(cnf_matrix,
-        #                           normalize=False,
-        #                           title='Confusion matrix')
-        #plt.savefig(PATH + 'cmInceptionCropSmall.png',
-        #            bbox_inches='tight')
+        # Plot confusion matrix
+        cnf_matrix = confusion_matrix(val_generator.classes, pred_labels_one)
+        plt.figure()
+        self.plot_confusion_matrix(cnf_matrix,
+                                   normalize=False,
+                                   title='Confusion matrix')
+        plt.savefig(PATH + 'cmInceptionCropSmall.png',
+                    bbox_inches='tight')
 
-        ## Plot probability distribution
-        #df = pd.DataFrame(preds)
-        #df.columns = self.classes
-        #self.ProbabilityDistribution(df)
+        # Plot probability distribution
+        df = pd.DataFrame(preds)
+        df.columns = self.classes
+        self.ProbabilityDistribution(df)
 
         # Test prediction Data agumentation
-        nbr_test_samples = 1000
-        nbr_augmentation = 5
+        nbr_test_samples = 1000 #12153
+        nbr_augmentation = 10
         test_datagen = image.ImageDataGenerator(
                 rescale=1./255,
                 shear_range=0.1,
@@ -258,7 +262,7 @@ class InceptionFineTuning(object):
                 horizontal_flip=True)
         for idx in range(nbr_augmentation):
             print('{}th augmentation for testing ...'.format(idx))
-            random_seed = np.random.random_integers(0, 100000)
+            random_seed = np.random.randint(0, 100000)
 
             test_generator = test_datagen.flow_from_directory(
                     PATH + 'test',
@@ -280,10 +284,54 @@ class InceptionFineTuning(object):
         test_filenames = test_generator.filenames
         raw_test_filenames = [f.split('/')[-1] for f in test_filenames]
 
-        df = pd.DataFrame(preds, index=raw_test_filenames)
-        df.columns = self.classes
-        df.index.name = 'image'
-        df.to_csv(op.join(self.f.data_processed, 'classification_inceptionv3.csv'))
+        df_stg1 = pd.DataFrame(preds, index=raw_test_filenames)
+        df_stg1.columns = self.classes
+        df_stg1.index.name = 'image'
+        #df.to_csv(op.join(self.f.data_processed, 'pred.csv'))
+
+        # Test prediction Data agumentation
+        nbr_test_samples = 12153
+        nbr_augmentation = 10
+        test_datagen = image.ImageDataGenerator(
+                rescale=1./255,
+                shear_range=0.1,
+                zoom_range=0.1,
+                width_shift_range=0.1,
+                height_shift_range=0.1,
+                horizontal_flip=True)
+        for idx in range(nbr_augmentation):
+            print('{}th augmentation for testing ...'.format(idx))
+            random_seed = np.random.randint(0, 100000)
+
+            test_generator = test_datagen.flow_from_directory(
+                    PATH + 'test_stg2',
+                    target_size=(img_height, img_width),
+                    batch_size=batch_size,
+                    shuffle=False, # Important !!!
+                    seed=random_seed,
+                    classes=None,
+                    class_mode=None)
+
+            print('Begin to predict for testing data ...')
+            if idx == 0:
+                preds = model.predict_generator(test_generator, nbr_test_samples)
+            else:
+                preds += model.predict_generator(test_generator, nbr_test_samples)
+
+        preds /= nbr_augmentation
+
+        test_filenames = test_generator.filenames
+        raw_test_filenames = [f.split('/')[-1] for f in test_filenames]
+
+        df_stg2 = pd.DataFrame(preds, index=raw_test_filenames)
+        df_stg2.columns = self.classes
+        df_stg2.index.name = 'image'
+        df_stg2.index = df_stg2.index.map(lambda x: 'test_stg2/' + str(x))
+        df = pd.concat([df_stg1, df_stg2])
+        df.to_csv(op.join(self.f.data_processed, 'pred_stg2.csv'))
+
+
+
         print("--- End %.1f seconds ---" % (time.time() - start_time))
 
 if __name__ == '__main__':

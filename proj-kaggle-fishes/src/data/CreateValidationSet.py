@@ -41,6 +41,22 @@ else:
 os.chdir(DEVCROP_DIR + 'train')
 g = glob('*')
 for d in g:
+    if not os.path.isdir('../val/'+d):
+        os.makedirs('../val/'+d)
+        print('../val/'+d)
+    else: print("Existing valid/"+d)
+
+g = glob('*/*.jpg')
+print("Number of fish in train = ",len(g))
+shuf = np.random.permutation(g)
+for i in range(500):
+    print(shuf[i], '../val/' + shuf[i])
+    shutil.copyfile(shuf[i], '../val/' + shuf[i])
+
+# Create val folders
+#os.chdir(DEVCROP_DIR + 'train')
+g = glob('*')
+for d in g:
     if not os.path.isdir('../sample/train/'+d):
         os.mkdir('../sample/train/'+d)
         print('../sample/train/'+d)
@@ -51,7 +67,7 @@ print("Number of fish in train = ",len(g))
 shuf = np.random.permutation(g)
 for i in range(500):
     print(shuf[i], '../sample/train/' + shuf[i])
-    shutil.copyfile(shuf[i], '../sample/train/' + shuf[i])
+    shutil.move(shuf[i], '../sample/train/' + shuf[i])
 
 # Create classes folders
 os.chdir('../test/category')
