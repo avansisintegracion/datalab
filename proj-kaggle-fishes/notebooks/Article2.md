@@ -1,6 +1,8 @@
 # Article 2
 
 Intro to the subsections...
+This post is the second part of our experience in the [kaggle competition](https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring). In our previous post we have described how we start the competition, our first approaches, the difficulties of the competition, the tools that we used in terms of project management and organization and some  the main approaches that you can take into account for a image classification project.
+During this post, we will present the final approachaes that we used in the competitions, the outcomes and the conclusions that we obtained in this experience.
 
 # A more complete bag of features approach
 
@@ -115,10 +117,6 @@ ax[1, 3].imshow(blobs_img)
 plt.show()
 ```
 
-    /usr/local/lib/python2.7/site-packages/matplotlib/font_manager.py:273: UserWarning: Matplotlib is building the font cache using fc-list. This may take a moment.
-      warnings.warn('Matplotlib is building the font cache using fc-list. This may take a moment.')
-
-
 ![png](./images/output_26_1.png)
 
 
@@ -131,25 +129,60 @@ The Kernix Lab has been successful by using [XGBoost](https://xgboost.readthedoc
 SVG(filename='images/scores_xgboost.svg')
 ```
 
-
-
-
 ![svg](./images/output_28_0.svg)
 
 
-
-Logloss score keep rising from validation dataset to the private one when we used random splitting, showing that it was a final poor choice as the private dataset contained many unseen boats so far. Training with a boat-aware splitting, allowed us to have a much more consistant results between the datasets. Even if the results in terms of rank on the leaderboard were not great with this approach, it showed us that this kind of model, even if less accurate than state-of-the-art classifier, they generalize well compared to many and gives consistant results.
+Logloss score keep rising from validation dataset to the private one when we used random splitting, showing that it was a final poor choice as the private dataset contained many unseen boats so far. Training with a boat-aware splitting, allowed us to have a much more consistent results between the datasets. Even if the results in terms of rank on the leaderboard were not great with this approach, it showed us that this kind of model, even if less accurate than state-of-the-art classifier, they generalize well compared to many and gives consistent results.
 
 # Strength of deep learning
 
-We fine-tune several Convnet models, namely VGG16, VGG19, and GoogleNet (Inception) on both the original and augmented dataset. For each model, we truncate and replace the top layer (softmax layer with 1000 categories for ImageNet) with our new softmax layer with
+We fine-tuned a convent model with different pretrained architectures like [VGG16](http://www.robots.ox.ac.uk/~vgg/research/very_deep/), [InceptionV3](http:/://arxiv.org/abs/1512.00567), [ResNet50](https://arxiv.org/abs/1611.05431).
+A pretrained network can determine universal features like curves and edges in its early layers, those are relevant and useful to most of the classification problems.
+These pretrained models are composed by complex architecture with huge amount
+of parametres, trained on large datasets like the ImageNet, with 1.2M labelled
+images. 
+The most common practice is to truncate the last layer of the pretrained network and replace it with a new softmax layer with the number of class desirable for the new problem.
+
+
+## Model regression 
+
+The last layer of the model is **fine tuned** to obtain a fish and no fish classification `x_fish` and also the coordinates of the identified fish `x_fish`. 
+
+```python
+print("--- Adding on top layers %.1f seconds ---" % (time.time() -
+                                                     start_time))
+output = base_model.get_layer(index=-1).output  # Shape: (8, 8, 2048)
+output = AveragePooling2D((8, 8), strides=(8, 8),
+                          name='avg_pool')(output)
+output = Flatten(name='flatten')(output)
+x_bb = Dense(4, name='bb')(output)
+x_fish = Dense(1, activation='sigmoid', name='fish')(output)
+
+model = Model(base_model.input, [x_bb, x_fish])
+
+optimizer = SGD(lr=learning_rate, momentum=0.9, decay=0.0,
+                nesterov=True)
+model.compile(loss=['mse', 'binary_crossentropy'],
+              optimizer=optimizer, metrics=['accuracy'],
+              loss_weights=[0.001, 1.])
+
+earlistop = EarlyStopping(monitor='val_bb_acc', min_delta=0, patience=0,
+                          verbose=1, mode='auto')
+SaveModelName = MODELS + "InceptionV3BboxFish.h5"
+best_model = ModelCheckpoint(SaveModelName, monitor='val_bb_acc',
+                             verbose=1, save_best_only=True)
+callbacks_list = [earlistop, best_model]
+
+model.fit_generator(
+        train_generator,
+        samples_per_epoch=nbr_train_samples,
+        nb_epoch=nbr_epoch,
+        validation_data=validation_generator,
+        nb_val_samples=nbr_val_samples,
+        callbacks=callbacks_list)
+```
 
 # Conclusion & perspective
 
-Questions:
-* Fig score xgoboost, comment tu obtiens le score pour le private leader board pour le cas de boat aware splitting ?
+Winning solution include state of the art algorithms like [SSD](https://github.com/rykov8/ssd_keras)
 
-
-```python
-
-```
