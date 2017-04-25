@@ -136,53 +136,74 @@ Logloss score keep rising from validation dataset to the private one when we use
 
 # Strength of deep learning
 
+## Bounding box regression
+
+A kaggle participant posted the coordinates of the bounding box in the [kaggle forum](https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring/discussion/25902) using the [Sloth](https://github.com/cvhciKIT/sloth). 
+
+```
+anno_classes = glob.glob(op.join(self.f.data_external_annos, '*.json'))
+bb_json = {}
+for fish_class in anno_classes:
+    fish_bb_json = json.load(open(op.join(fish_class), 'r'))
+    for fish_annotation in fish_bb_json:
+        if 'annotations' in fish_annotation.keys() and len(fish_annotation['annotations']) > 0:
+            bb_json[fish_annotation['filename'].split('/')[-1]] = { 
+                'x_0' : sorted(fish_annotation['annotations'], key=lambda x:
+                x['x'])[0]['x'], 
+                'y_0' : sorted(fish_annotation['annotations'], key=lambda x:
+                x['y'])[0]['y'], 
+                'x_1' : (sorted(fish_annotation['annotations'], key=lambda x:
+                x['x']+x['width'])[-1]['x'] + sorted(fish_annotation['annotations'], key=lambda x:
+                x['x']+x['width'])[-1]['width']),
+                'y_1' : (sorted(fish_annotation['annotations'], key=lambda x:
+                x['y']+x['height'])[-1]['y'] + sorted(fish_annotation['annotations'], key=lambda x:
+                x['y']+x['height'])[-1]['width'])
+        }
+#if len(fish_annotation['annotations']) > 2:
+#bb_json[fish_annotation['filename'].split('/')[-1]] = sorted(
+#    fish_annotation['annotations'], key=lambda x:
+#    x['height']*x['width'])[-1]
+```
+
+
+## Fine tunned model
+
 We fine-tuned a convent model with different pretrained architectures like [VGG16](http://www.robots.ox.ac.uk/~vgg/research/very_deep/), [InceptionV3](http:/://arxiv.org/abs/1512.00567), [ResNet50](https://arxiv.org/abs/1611.05431).
-A pretrained network can determine universal features like curves and edges in its early layers, those are relevant and useful to most of the classification problems.
+
+A pretrained network can determine universal features like curves and edges in
+its early layers, those are relevant and useful to most of the classification
+problems.
 These pretrained models are composed by complex architecture with huge amount
-of parametres, trained on large datasets like the ImageNet, with 1.2M labelled
-images. 
-The most common practice is to truncate the last layer of the pretrained network and replace it with a new softmax layer with the number of class desirable for the new problem.
-
-
-## Model regression 
+of parametres, trained on large datasets like the [ImageNet](http://www.image-net.org/challenges/LSVRC/), with 1.2M labelled images. 
+The most common practice is to truncate the last layer of the pretrained
+network and replace it with a new softmax layer with the number of class
+desirable for the new problem.
 
 The last layer of the model is **fine tuned** to obtain a fish and no fish classification `x_fish` and also the coordinates of the identified fish `x_fish`. 
+[Keras](http://https://github.com/fchollet/keras) contains deep learning models alongside with the pretrained with pre-trained weights. In the snipped below, we load InceptionV3 model with the pre-trainedweights on [ImageNet](http://www.image-net.org/challenges/LSVRC/). Inception V3 has been trained with `299x299x3` images, which is the default parameter but it is posible to modify the size with the parameter `input_shape`. The fine tunning is done removing the top layers (AveragePooling2D, Flatten and Dense) and replacing them by dense layers with the size of the desired classification. The parameters of the top layers replaced remains the same as the initial inception model. Like the [Standfor Convolutional Neural networks document](http://cs231n.github.io/convolutional-networks/) says:
+
+>  "don’t be a hero": Instead of rolling your own architecture for a problem, you should look at whatever architecture currently works best on ImageNet
 
 ```python
-print("--- Adding on top layers %.1f seconds ---" % (time.time() -
-                                                     start_time))
+base_model = InceptionV3(include_top=False, weights='imagenet',
+                         input_tensor=None, input_shape=(img_height, img_width, 3))
 output = base_model.get_layer(index=-1).output  # Shape: (8, 8, 2048)
 output = AveragePooling2D((8, 8), strides=(8, 8),
                           name='avg_pool')(output)
 output = Flatten(name='flatten')(output)
 x_bb = Dense(4, name='bb')(output)
 x_fish = Dense(1, activation='sigmoid', name='fish')(output)
-
 model = Model(base_model.input, [x_bb, x_fish])
-
-optimizer = SGD(lr=learning_rate, momentum=0.9, decay=0.0,
-                nesterov=True)
-model.compile(loss=['mse', 'binary_crossentropy'],
-              optimizer=optimizer, metrics=['accuracy'],
-              loss_weights=[0.001, 1.])
-
-earlistop = EarlyStopping(monitor='val_bb_acc', min_delta=0, patience=0,
-                          verbose=1, mode='auto')
-SaveModelName = MODELS + "InceptionV3BboxFish.h5"
-best_model = ModelCheckpoint(SaveModelName, monitor='val_bb_acc',
-                             verbose=1, save_best_only=True)
-callbacks_list = [earlistop, best_model]
-
-model.fit_generator(
-        train_generator,
-        samples_per_epoch=nbr_train_samples,
-        nb_epoch=nbr_epoch,
-        validation_data=validation_generator,
-        nb_val_samples=nbr_val_samples,
-        callbacks=callbacks_list)
 ```
+
+We obtained better results with the inception network proposed from the keras function.
+Inception network is built from convolutional building blocks. This
+architecture is especially useful in the context of localization and object
+detection.
+There has been different version of Inception `v1`, `v2`, `v3`. The version `Inception v3` is a variant of the [GoogleNet network](https://arxiv.org/pdf/1409.4842v1.pdf) with the implementation of _batch normalization_. This refers to an additional normalization of the fully connected layer of the auxiliar classifier and not only the convolution blocks. 
+
 
 # Conclusion & perspective
 
-Winning solution include state of the art algorithms like [SSD](https://github.com/rykov8/ssd_keras)
-
+- Clipping to reduce the penalization from log loss score
+- Winning solution include state of the art algorithms like [SSD](https://github.com/rykov8/ssd_keras)
