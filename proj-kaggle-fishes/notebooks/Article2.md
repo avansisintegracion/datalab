@@ -1,8 +1,13 @@
 # Article 2
 
-Intro to the subsections...
-This post is the second part of our experience in the [kaggle competition](https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring). In our previous post we have described how we start the competition, our first approaches, the difficulties of the competition, the tools that we used in terms of project management and organization and some  the main approaches that you can take into account for a image classification project.
-During this post, we will present the final approachaes that we used in the competitions, the outcomes and the conclusions that we obtained in this experience.
+This post is the second part of our experience in the [kaggle
+competition](https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring).
+In our previous post we have described how we start the competition, our first
+approaches, the difficulties of the competition, the tools that we used in
+terms of project management and organization and some of the main approaches
+that you can take into account for a image classification project.  During this
+post, we will present the final approaches that we used in the competitions,
+the outcomes and the conclusions that we obtained in this experience.
 
 # A more complete bag of features approach
 
@@ -119,11 +124,9 @@ plt.show()
 
 ![png](./images/output_26_1.png)
 
-
-As you can see on the images, it does enable us to remove regions for keypoint detection that surround the fishes, such a the floor or the elements in the top-middle region. This is just one example that is not in the dataset (see NDA), but on the images of the dataset, by playing with the number of colors and size of the elements we were actually able to remove quite a lot of non intersting features. At the same time, you can notice that some of the major elements are also lost such as the fins. They are extremely important in fish classification as their positions, proportions to each other and colors are key to fish species definition as previously discussed.
+As you can see on the images, it does enable us to remove regions for keypoint detection that surround the fishes, such as the floor or the elements in the top-middle region. This is just one example that is not in the dataset (see NDA), but on the images of the dataset, by playing with the number of colours and size of the elements we were actually able to remove quite a lot of non interesting features. At the same time, you can notice that some of the major elements are also lost such as the fins. They are extremely important in fish classification as their positions, proportions to each other and colours are key to fish species definition as previously discussed.
 
 The Kernix Lab has been successful by using [XGBoost](https://xgboost.readthedocs.io/en/latest/) library for classifications problems, which is a popular gradient boosted machine. So we went on to replace random forest by an optimized xgboost classifier and here are the results we had at the end of the competition :
-
 
 ```python
 SVG(filename='images/scores_xgboost.svg')
@@ -134,37 +137,115 @@ SVG(filename='images/scores_xgboost.svg')
 
 Logloss score keep rising from validation dataset to the private one when we used random splitting, showing that it was a final poor choice as the private dataset contained many unseen boats so far. Training with a boat-aware splitting, allowed us to have a much more consistent results between the datasets. Even if the results in terms of rank on the leaderboard were not great with this approach, it showed us that this kind of model, even if less accurate than state-of-the-art classifier, they generalize well compared to many and gives consistent results.
 
+
+
 # Strength of deep learning
 
 ## Bounding box regression
 
-A kaggle participant posted the coordinates of the bounding box in the [kaggle forum](https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring/discussion/25902) using the [Sloth](https://github.com/cvhciKIT/sloth). 
+A kaggle participant posted the coordinates of the bounding box in the [kaggle
+forum](https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring/discussion/25902)
+using the [Sloth](https://github.com/cvhciKIT/sloth). The result contains
+information about the `x`, `y`, `width` and `height` of the bounding box for
+every fish in the pictures. Taking into acount that some pictures contains
+multiple fishes, we tried different approaches like taking only one bounding
+box per picture, or a combination of the coordinates of the bounding box for
+each picture to include the maximum number of fishes inside the picture. For
+instance in the following snippet, we read the different annotations for each
+class and each picture and then we take the largest annotation using the
+`height` and `width`. 
 
-```
+```python
 anno_classes = glob.glob(op.join(self.f.data_external_annos, '*.json'))
 bb_json = {}
 for fish_class in anno_classes:
     fish_bb_json = json.load(open(op.join(fish_class), 'r'))
     for fish_annotation in fish_bb_json:
-        if 'annotations' in fish_annotation.keys() and len(fish_annotation['annotations']) > 0:
-            bb_json[fish_annotation['filename'].split('/')[-1]] = { 
-                'x_0' : sorted(fish_annotation['annotations'], key=lambda x:
-                x['x'])[0]['x'], 
-                'y_0' : sorted(fish_annotation['annotations'], key=lambda x:
-                x['y'])[0]['y'], 
-                'x_1' : (sorted(fish_annotation['annotations'], key=lambda x:
-                x['x']+x['width'])[-1]['x'] + sorted(fish_annotation['annotations'], key=lambda x:
-                x['x']+x['width'])[-1]['width']),
-                'y_1' : (sorted(fish_annotation['annotations'], key=lambda x:
-                x['y']+x['height'])[-1]['y'] + sorted(fish_annotation['annotations'], key=lambda x:
-                x['y']+x['height'])[-1]['width'])
-        }
-#if len(fish_annotation['annotations']) > 2:
-#bb_json[fish_annotation['filename'].split('/')[-1]] = sorted(
-#    fish_annotation['annotations'], key=lambda x:
-#    x['height']*x['width'])[-1]
+        if len(fish_annotation['annotations']) > 0:
+        bb_json[fish_annotation['filename'].split('/')[-1]] = sorted(
+            fish_annotation['annotations'], key=lambda x:
+            x['height']*x['width'])[-1]
 ```
 
+The pictures that does not contain bounding boxes are filled with empty boundy
+box coordinates.
+
+```python
+# Get python raw filenames
+raw_filenames = [f.split('/')[-1] for f in filenames]
+
+# Image that have no annotation, empty bounding box
+empty_bbox = {'x_0': 0., 'y_0': 0., 'x_1': 0., 'y_1': 0.}
+
+for f in raw_filenames:
+if not f in bb_json.keys(): bb_json[f] = empty_bbox
+```
+
+Keras provides a function
+[ImageDataGenerator](https://keras.io/preprocessing/image/) which can be used
+as a preprocessing tool to modify or normalize the pictures with predefined
+treatment like rescale, rotation, shift, shear, flip, whitening, etc. The
+preprocessing generator can read the images directly from a directory path
+using the function `flow_from_directory`. The result can be used as an iterator
+with and infinite loop that generates images in batches. 
+
+```python
+# Image preprocessing generator
+train_datagen = image.ImageDataGenerator(rescale=1./255,)
+
+trn_generator = train_datagen.flow_from_directory(
+        PATH + 'train',
+        target_size=(img_height, img_width),
+        batch_size=batch_size,
+        shuffle=False,
+        #save_to_dir = PATH + 'TransfTrain/',
+        #save_prefix = 'aug',
+        #classes = self.classes,
+        class_mode=None,
+        seed=seed)
+```
+
+Keras provides a method to train images by batches to reduce memory utilization
+which is particularly useful when training with GPU with low memory. This also
+makes image preprocessing to be done in parallel of training process, which
+optimize CPU utilization.  In order to use Keras `fit_generator`, the bounding
+box coordinates and the Fish/NoFish label must be transformed also as an
+iterator.  The concatenation of the batch image generator, the bounding box
+coordinates generator and the Fish/NoFish label results in a global generator
+in batch `train_generator` that can be used to feed the training function using
+the `fit_generator` method.
+
+
+```python
+# Boundary boxes dict to np.array 
+trn_bbox = np.stack([convert_bb(bb_json[f], s) for f, s in
+                     zip(raw_filenames, sizes)],).astype(np.float32)
+#=> [['x_0', 'y_0', 'x_1', 'x_0'], ['x_0', 'y_0', 'x_1', 'x_0'],...]
+
+# Fish = 1, NoFish = 0,  (NoFish category label == 4)
+trn_fish_labels = np.asarray([ 0 if ( fish == 4 ) else 1 for fish in trn_generator.classes ])
+#=> [[1], [1], [0],...]
+
+# Transform np arrays to iteratior
+def batch(iterable1, iterable2, n=1):
+    l1 = len(iterable1)
+    l2 = len(iterable2)
+    for ndx in range(0, l2, n):
+        yield [iterable1[ndx:min(ndx + n, l1)], iterable2[ndx:min(ndx + n, l2)]]
+
+trn_bbox_generator = (n for n in itertools.cycle(batch(trn_bbox, trn_fish_labels,
+                                                       n=batch_size)))
+# Concatenation of image and labels iterator
+train_generator = itertools.izip(trn_generator, trn_bbox_generator)
+
+# Train model
+model.fit_generator(train_generator,
+                    samples_per_epoch=nbr_train_samples,
+                    nb_epoch=nbr_epoch,
+                    validation_data=validation_generator,
+                    nb_val_samples=nbr_val_samples,
+                    callbacks=callbacks_list)
+```
 
 ## Fine tunned model
 
@@ -201,6 +282,10 @@ Inception network is built from convolutional building blocks. This
 architecture is especially useful in the context of localization and object
 detection.
 There has been different version of Inception `v1`, `v2`, `v3`. The version `Inception v3` is a variant of the [GoogleNet network](https://arxiv.org/pdf/1409.4842v1.pdf) with the implementation of _batch normalization_. This refers to an additional normalization of the fully connected layer of the auxiliar classifier and not only the convolution blocks. 
+
+## Cropping results
+
+Using the above model, we obtain results of ..
 
 
 # Conclusion & perspective
