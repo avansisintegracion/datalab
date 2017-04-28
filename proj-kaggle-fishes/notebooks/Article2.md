@@ -138,7 +138,6 @@ SVG(filename='images/scores_xgboost.svg')
 Logloss score keep rising from validation dataset to the private one when we used random splitting, showing that it was a final poor choice as the private dataset contained many unseen boats so far. Training with a boat-aware splitting, allowed us to have a much more consistent results between the datasets. Even if the results in terms of rank on the leaderboard were not great with this approach, it showed us that this kind of model, even if less accurate than state-of-the-art classifier, they generalize well compared to many and gives consistent results.
 
 
-
 # Strength of deep learning
 
 ## Bounding box regression
@@ -198,9 +197,6 @@ trn_generator = train_datagen.flow_from_directory(
         target_size=(img_height, img_width),
         batch_size=batch_size,
         shuffle=False,
-        #save_to_dir = PATH + 'TransfTrain/',
-        #save_prefix = 'aug',
-        #classes = self.classes,
         class_mode=None,
         seed=seed)
 ```
@@ -283,10 +279,13 @@ architecture is especially useful in the context of localization and object
 detection.
 There has been different version of Inception `v1`, `v2`, `v3`. The version `Inception v3` is a variant of the [GoogleNet network](https://arxiv.org/pdf/1409.4842v1.pdf) with the implementation of _batch normalization_. This refers to an additional normalization of the fully connected layer of the auxiliar classifier and not only the convolution blocks. 
 
+--- 
+
 ## Cropping results
 
-Using the above model, we obtain results of ..
+In order to evaluate the results of the model we use the intersection over union. This approach give us an approach ...
 
+![](images/histotrain.jpg)
 
 # Conclusion & perspective
 
