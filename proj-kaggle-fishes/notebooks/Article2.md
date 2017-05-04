@@ -142,17 +142,16 @@ Logloss score keep rising from validation dataset to the private one when we use
 
 ## Bounding box regression
 
-A kaggle participant posted the coordinates of the bounding box in the [kaggle
-forum](https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring/discussion/25902)
-using the [Sloth](https://github.com/cvhciKIT/sloth). The result contains
-information about the `x`, `y`, `width` and `height` of the bounding box for
-every fish in the pictures. Taking into acount that some pictures contains
-multiple fishes, we tried different approaches like taking only one bounding
-box per picture, or a combination of the coordinates of the bounding box for
-each picture to include the maximum number of fishes inside the picture. For
-instance in the following snippet, we read the different annotations for each
-class and each picture and then we take the largest annotation using the
-`height` and `width`. 
+A kaggle participant posted in the [kaggle
+forum](https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring/discussion/25902) the coordinates of the bounding box for every fish in the pictures of the train set. This has been made 
+using the labelling software [Sloth](https://github.com/cvhciKIT/sloth). The posted files contain
+information of the coordinates of the bounding box in terms of the starting point and the size of the box (`x`, `y`, `width` and `height`).
+Taking into account that some pictures contain multiple fishes, we tried
+different approaches like taking only one bounding box per picture, or a
+combination of the coordinates of the bounding box for each picture to include
+the maximum number of fishes inside the picture. For instance in the following
+snippet, we read the different annotations for each class and each picture and
+then we take the coordinates for the bigger fish in the `height` and `width`. 
 
 ```python
 anno_classes = glob.glob(op.join(self.f.data_external_annos, '*.json'))
@@ -166,8 +165,7 @@ for fish_class in anno_classes:
             x['height']*x['width'])[-1]
 ```
 
-The pictures that does not contain bounding boxes are filled with empty boundy
-box coordinates.
+The pictures that does not contain bounding boxes are filled with empty box coordinates.
 
 ```python
 # Get python raw filenames
@@ -201,15 +199,15 @@ trn_generator = train_datagen.flow_from_directory(
         seed=seed)
 ```
 
-Keras provides a method to train images by batches to reduce memory utilization
+Keras also provides a method to train images by batches to reduce memory utilization
 which is particularly useful when training with GPU with low memory. This also
 makes image preprocessing to be done in parallel of training process, which
-optimize CPU utilization.  In order to use Keras `fit_generator`, the bounding
+optimize CPU utilization.  In order to use Keras `fit_generator` function, the bounding
 box coordinates and the Fish/NoFish label must be transformed also as an
 iterator.  The concatenation of the batch image generator, the bounding box
 coordinates generator and the Fish/NoFish label results in a global generator
 in batch `train_generator` that can be used to feed the training function using
-the `fit_generator` method.
+the `fit_generator` method as detailed later in the article.
 
 
 ```python
@@ -234,13 +232,6 @@ trn_bbox_generator = (n for n in itertools.cycle(batch(trn_bbox, trn_fish_labels
 # Concatenation of image and labels iterator
 train_generator = itertools.izip(trn_generator, trn_bbox_generator)
 
-# Train model
-model.fit_generator(train_generator,
-                    samples_per_epoch=nbr_train_samples,
-                    nb_epoch=nbr_epoch,
-                    validation_data=validation_generator,
-                    nb_val_samples=nbr_val_samples,
-                    callbacks=callbacks_list)
 ```
 
 ## Fine tunned model
@@ -273,21 +264,107 @@ x_fish = Dense(1, activation='sigmoid', name='fish')(output)
 model = Model(base_model.input, [x_bb, x_fish])
 ```
 
+The loss function used to train the model is a [mean square
+error](https://en.wikipedia.org/wiki/Mean_squared_error) in case of the
+bounding box regression and `binary crossentropy` for the fish/nofish
+classification.
+We use the [stochastic gradient descent
+optimizer](https://keras.io/optimizers/#sgd) to train our model and an
+initialization using momentum and a [nesterov
+scheme](http://www.cs.toronto.edu/~fritz/absps/momentum.pdf) to accelerate
+convergence. 
+Finaly, we train the model using the `train_generator` which delivers the 
+images, the bounding box and the fish labels by batches. 
+The batch size depends on the memory of the GPU, the size of the image and the
+size of the neural network used to train the model. For example using
+`InceptionV3`, image size of `640x360` and a [GPU
+Titan](http://www.geforce.com/hardware/desktop-gpus/geforce-gtx-titan/specifications)
+with 6Gb, the batch size can be 16.
+We separate the train set in two to obtain a validation set, we create a
+generator to obtain the validation images, bounding box and fish labels by
+batches the same way as we did for `train_generator`.
+
+```python
+optimizer = SGD(lr=learning_rate, momentum=0.9, decay=0.0,
+                nesterov=True)
+model.compile(loss=['mse', 'binary_crossentropy'],
+              optimizer=optimizer, metrics=['accuracy'],
+              loss_weights=[0.001, 1.])
+
+# Train model
+model.fit_generator(train_generator,
+                    samples_per_epoch=nbr_train_samples,
+                    nb_epoch=nbr_epoch,
+                    validation_data=validation_generator,
+                    nb_val_samples=nbr_val_samples,
+                    callbacks=callbacks_list)
+```
+
 We obtained better results with the inception network proposed from the keras function.
 Inception network is built from convolutional building blocks. This
 architecture is especially useful in the context of localization and object
 detection.
-There has been different version of Inception `v1`, `v2`, `v3`. The version `Inception v3` is a variant of the [GoogleNet network](https://arxiv.org/pdf/1409.4842v1.pdf) with the implementation of _batch normalization_. This refers to an additional normalization of the fully connected layer of the auxiliar classifier and not only the convolution blocks. 
+There has been different version of Inception `v1`, `v2`, `v3`. The version `Inception v3` is a variant of the [GoogleNet network](https://arxiv.org/pdf/1409.4842v1.pdf) with the implementation of _batch normalization_. This refers to an additional normalization of the fully connected layer of the auxiliary classifier and not only the convolution blocks. 
 
 --- 
 
 ## Cropping results
 
-In order to evaluate the results of the model we use the intersection over union. This approach give us an approach ...
+The model is trained to decrease the absolute distance between the
+predicted coordinates and the existing ones, but a more common metric to measure 
+object detection techniques is the [intersection over
+union](http://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/).
+Basically it is the ratio of the common and the total area of the predicted and the ground truth bounding box.
+The obtained results are not satisfactory because the predicted bounding boxes
+does not intersect the bounding box used for validation. This occurs because
+some pictures contains several fishes, then the model hardly generalize to
+select the biggest fish in the picture. 
+In addition it does not provide a good generalization because of the great
+difference of the pictures of the train and test set.
 
 ![](images/histotrain.jpg)
 
+# Using neural networks to make fish classification
+
+Similar to the regression model used to obtain the coordinates of the bounding box, the classification can be obtain by doing some fine tuned to obtain the classification of the fish. 
+The only thing that changes is the last layer `x_class` with 8 different outputs:
+
+```python
+base_model = InceptionV3(include_top=False, weights='imagenet',
+                         input_tensor=None, input_shape=(img_height, img_width, 3))
+output = base_model.get_layer(index=-1).output  # Shape: (8, 8, 2048)
+output = AveragePooling2D((8, 8), strides=(8, 8),
+                          name='avg_pool')(output)
+output = Flatten(name='flatten')(output)
+x_class = Dense(8, name='class')(output)
+model = Model(base_model.input, x_class)
+```
+
+The results are highly affected by the way we split the train set, as we highlighted in the [article 1](REF). Using a random split a validation log loss of 0.4 for the validation set and 1.02 for the submission in the public leader board. 
+This shows that the model overfits over the training set.
+Using a split with different boats in the validation set  we obtain a log loss of 0.98 and 1.3 in the public leader board. 
+Using this split we are able to test better our model with making submission but when we use it to predict the submission over the test set of the public leader board we obtain worse results than the random split because our model have seen less boats.
+
+
+**Different boat split** 
+
+![](images/cmInceptionBoatSplit.png){ height="320" width="320"}
+![](images/pdInceptionBoatSplit.png){ height="320" width="320"}
+
+
+**Random split**
+
+![](images/cmInceptionRandomSplit.png){ height="320" width="320"}
+![](images/pdInceptionRandomSplit.png){ height="320" width="320"}
+
+
+-|Random split|-|-|Boat split|-
+---|---|--- |--- |---|---
+Validation|Public leaderboard | Private leaderboard| Validation|Public leaderboard | Private leaderboard
+0.4| 1.02 |  2.66 | 0.98|1.3 | 2.65
+
 # Conclusion & perspective
+
 
 - Clipping to reduce the penalization from log loss score
 - Winning solution include state of the art algorithms like [SSD](https://github.com/rykov8/ssd_keras)
