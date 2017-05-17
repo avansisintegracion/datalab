@@ -1,11 +1,20 @@
 ---
 title: Partage de connaissance
-subtitle: Compétition kaggle 🐟 
-author: Cristian, Mikaël
+subtitle: Compétition kaggle 🐟
+author: Cristian, Mikael
 date: 2017-05-23
 ---
 
 # About the competition
+
+## Starting point
+
+In the Western and Central Pacific, 60% of the world’s tuna is caught illegally, a threat to marine ecosystem.
+
+## Goal of the competition
+
+Automate fish detection on pictures from fishing boats.
+(with machine learning)
 
 ## Images classes
 
@@ -27,17 +36,17 @@ Test stage 2 | 12000
 
 ![](images/Images_sizes.png){ width=50% }
 
-## Difficulties 💪
+## Preliminary observations
 
-* Some image are part of video sequences (Very similar images)
-* Test images come from different boats
-* Day night pictures (different explosion)
+* Pictures from video sequences
+* Limited number of boats in training set
+* Day/night pictures
 * Multiple fishes per picture
-* Some images are not correctly classified in the train set
+* Train set labelling errors
 
 ## Important dates
 
-Stage | Date 
+Stage | Date
 ---|---
 Competition start | 14 Nov 2016
 We start 🎉 | 13 Jan  2017
@@ -48,9 +57,66 @@ End stage 2 | 13 April 2017
 
 ## Bag of features
 
-* extract features with varying methods 
+* extract features with varying methods
 * find a way to combine these meaningful features
 * feed them into a classifier.
+
+# A tea break, working with two minds
+(a note on methods)
+
+## Cookiecutter
+
+```shell
+├── LICENSE
+├── Makefile           <- Makefile with commands like 'make data' or 'make train'
+├── README.md          <- The top-level README for developers using this project.
+├── data
+│   ├── external       <- Data from third party sources.
+│   ├── interim        <- Intermediate data that has been transformed.
+│   ├── processed      <- The final, canonical data sets for modeling.
+│   └── raw            <- The original, immutable data dump.
+│
+├── docs               <- A default Sphinx project; see sphinx-doc.org for details
+│
+├── models             <- Trained and serialized models, model predictions, or model summaries
+│
+├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
+│                         the creator s initials, and a short '-' delimited description, e.g.
+│                         '1.0-jqp-initial-data-exploration'.
+│
+├── references         <- Data dictionaries, manuals, and all other explanatory materials.
+│
+├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
+│   └── figures        <- Generated graphics and figures to be used in reporting
+│
+├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
+│                         generated with 'pip freeze > requirements.txt'
+│
+├── src                <- Source code for use in this project.
+│   ├── __init__.py    <- Makes src a Python module
+│   │
+│   ├── data           <- Scripts to download or generate data
+│   │   └── make_dataset.py
+│   │
+│   ├── features       <- Scripts to turn raw data into features for modeling
+│   │   └── build_features.py
+│   │
+│   ├── models         <- Scripts to train models and then use trained models to make
+│   │   │                 predictions
+│   │   ├── predict_model.py
+│   │   └── train_model.py
+│   │
+│   └── visualization  <- Scripts to create exploratory and results oriented visualizations
+│       └── visualize.py
+│
+└── tox.ini            <- tox file with settings for running tox; see tox.testrun.org
+
+```
+
+
+## Data abstraction layer
+
+Every picture was
 
 # Deep learning
 
@@ -91,19 +157,19 @@ as a preprocessing tool.
 
 ---
 
-### Train the model by batch 
+### Train the model by batch
 
-* The generator that feed the training fonction by batch contains: 
+* The generator that feed the training fonction by batch contains:
     * The image generator
-    * The bounding box coordinates generator 
+    * The bounding box coordinates generator
     * The Fish/NoFish label
 
-* itertools: [cylce](https://docs.python.org/2/library/itertools.html#itertools.cycle), [izip](https://docs.python.org/2/library/itertools.html#itertools.izip) 
+* itertools: [cylce](https://docs.python.org/2/library/itertools.html#itertools.cycle), [izip](https://docs.python.org/2/library/itertools.html#itertools.izip)
 
 ```python
->>> itertools.cycle('ABCD') 
+>>> itertools.cycle('ABCD')
 A B C D A B C D ...`
->>> itertools.izip('ABCD', 'xy') 
+>>> itertools.izip('ABCD', 'xy')
 Ax By`
 ```
 
