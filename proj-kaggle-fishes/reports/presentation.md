@@ -5,11 +5,13 @@ author: Cristian, Mikael
 date: 2017-05-23
 ---
 
-# About the competition
+
+# 1. The competition and the data
 
 ## Starting point
 
 In the Western and Central Pacific, 60% of the world’s tuna is caught illegally, a threat to marine ecosystem.
+
 
 ## Goal of the competition
 
@@ -18,7 +20,7 @@ Automate fish detection on pictures from fishing boats.
 
 ## Images classes
 
-![](images/fish_classes.jpeg)
+![](images/fish_classes.jpeg){class=plain}
 
 ## Data
 
@@ -30,11 +32,11 @@ Test stage 2 | 12000
 
 ## Class distribution
 
-![](images/Distribution.png){ width=50% }
+![](images/Distribution.png){width=50% class=plain}
 
 ## Image sizes
 
-![](images/Images_sizes.png){ width=50% }
+![](images/Images_sizes.png){width=50% class=plain}
 
 ## Preliminary observations
 
@@ -53,16 +55,29 @@ We start 🎉 | 13 Jan  2017
 End stage 1 | 6 April 2017
 End stage 2 | 13 April 2017
 
-# First model
+# 2. Computer vision based approach
 
-## Bag of features
+## Extract features
 
-* extract features with varying methods
-* find a way to combine these meaningful features
-* feed them into a classifier.
+![](images/bag_of_features_1.png){class=plain}
 
-# A tea break, working with two minds
-(a note on methods)
+## Combine features and train a model
+
+![](images/bag_of_features_2.png){class=plain}
+
+## Analyze the results
+
+![](images/results_I_bag_of_features.png){class=plain}
+
+## Remove background information
+
+![](images/interest_point_detection.png){width=70% class=plain}
+
+## Scoring
+
+![](images/scores_xgboost.svg){width=70% class=plain}
+
+# 3. A methodological break
 
 ## Cookiecutter
 
@@ -118,20 +133,19 @@ End stage 2 | 13 April 2017
 
 Every picture was
 
-# Deep learning
+# 4. Deep learning approach
 
 ## Bounding box regression
 
-* A kaggle participant posted in the [kaggle forum](https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring/discussion/25902) the coordinates of the bounding box for every fish in the pictures of the train set.
-* This has been made using the labelling software [Sloth](https://github.com/cvhciKIT/sloth).
-* Coordinates of the bounding box in terms of the starting point and the size of the box (`x`, `y`, `width` and `height`).
+* Fishes Bounding box coordinates shared on [kaggle forum](https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring/discussion/25902).
+* Done using [Sloth](https://github.com/cvhciKIT/sloth).
+* Coordinates of the bounding box referenced as (`x`, `y`, `width` and `height`).
 
 ## Multiple fish per picture
 
 * Only one bounding box per picture,
-* Combination of the coordinates of the bounding box for each picture to include
-the maximum number of fishes inside the picture.
-* The pictures that does not contain bounding boxes are filled with empty box coordinates.
+* Data augmentation by selecting multiple fishes per pictures
+* No Fish : empty coordinates.
 
 ## Image preprocessing
 
@@ -176,7 +190,7 @@ Ax By`
 ## Finetuning a pretrained model
 
 
-# Conclusions
+# 5. Elements of conclusion
 
 -------------
 
