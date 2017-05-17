@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="generator" content="pandoc">
+  <meta name="author" content="Cristian, Mikaël">
+  <meta name="dcterms.date" content="2017-05-23">
+  <title>Partage de connaissance</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+  <link rel="stylesheet" href="reveal.js/css/reveal.css">
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="reveal.js/css/theme/black.css" id="theme">
+  <!-- Printing and PDF exports -->
+  <script>
+    var link = document.createElement( 'link' );
+    link.rel = 'stylesheet';
+    link.type = 'text/css';
+    link.href = window.location.search.match( /print-pdf/gi ) ? 'reveal.js/css/print/pdf.css' : 'reveal.js/css/print/paper.css';
+    document.getElementsByTagName( 'head' )[0].appendChild( link );
+  </script>
+  <!--[if lt IE 9]>
+  <script src="reveal.js/lib/js/html5shiv.js"></script>
+  <![endif]-->
+</head>
+<body>
+  <div class="reveal">
+    <div class="slides">
+
+<section>
+  <h1 class="title">Partage de connaissance</h1>
+  <p class="subtitle">Compétition kaggle 🐟</p>
+  <p class="author">Cristian, Mikaël</p>
+  <p class="date">2017-05-23</p>
+</section>
+
+<section><section id="about-the-competition" class="titleslide slide level1"><h1>About the competition</h1></section><section id="images-classes" class="slide level2">
+<h2>Images classes</h2>
+<figure>
+<img src="images/fish_classes.jpeg" />
+</figure>
+</section><section id="data" class="slide level2">
+<h2>Data</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Name</th>
+<th>Number of photos</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Train</td>
+<td>3777</td>
+</tr>
+<tr class="even">
+<td>Test stage 1</td>
+<td>1000</td>
+</tr>
+<tr class="odd">
+<td>Test stage 2</td>
+<td>12000</td>
+</tr>
+</tbody>
+</table>
+</section><section id="class-distribution" class="slide level2">
+<h2>Class distribution</h2>
+<figure>
+<img src="images/Distribution.png" style="width:50.0%" />
+</figure>
+</section><section id="image-sizes" class="slide level2">
+<h2>Image sizes</h2>
+<figure>
+<img src="images/Images_sizes.png" style="width:50.0%" />
+</figure>
+</section><section id="difficulties" class="slide level2">
+<h2>Difficulties 💪</h2>
+<ul>
+<li>Some image are part of video sequences (Very similar images)</li>
+<li>Test images come from different boats</li>
+<li>Day night pictures (different explosion)</li>
+<li>Multiple fishes per picture</li>
+<li>Some images are not correctly classified in the train set</li>
+</ul>
+</section><section id="important-dates" class="slide level2">
+<h2>Important dates</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Stage</th>
+<th>Date</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Competition start</td>
+<td>14 Nov 2016</td>
+</tr>
+<tr class="even">
+<td>We start 🎉</td>
+<td>13 Jan 2017</td>
+</tr>
+<tr class="odd">
+<td>End stage 1</td>
+<td>6 April 2017</td>
+</tr>
+<tr class="even">
+<td>End stage 2</td>
+<td>13 April 2017</td>
+</tr>
+</tbody>
+</table>
+</section></section>
+<section><section id="first-model" class="titleslide slide level1"><h1>First model</h1></section><section id="bag-of-features" class="slide level2">
+<h2>Bag of features</h2>
+<ul>
+<li>extract features with varying methods</li>
+<li>find a way to combine these meaningful features</li>
+<li>feed them into a classifier.</li>
+</ul>
+</section></section>
+<section><section id="deep-learning" class="titleslide slide level1"><h1>Deep learning</h1></section><section id="bounding-box-regression" class="slide level2">
+<h2>Bounding box regression</h2>
+<ul>
+<li>A kaggle participant posted in the <a href="https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring/discussion/25902">kaggle forum</a> the coordinates of the bounding box for every fish in the pictures of the train set.</li>
+<li>This has been made using the labelling software <a href="https://github.com/cvhciKIT/sloth">Sloth</a>.</li>
+<li>Coordinates of the bounding box in terms of the starting point and the size of the box (<code>x</code>, <code>y</code>, <code>width</code> and <code>height</code>).</li>
+</ul>
+</section><section id="multiple-fish-per-picture" class="slide level2">
+<h2>Multiple fish per picture</h2>
+<ul>
+<li>Only one bounding box per picture,</li>
+<li>Combination of the coordinates of the bounding box for each picture to include the maximum number of fishes inside the picture.</li>
+<li>The pictures that does not contain bounding boxes are filled with empty box coordinates.</li>
+</ul>
+</section><section id="image-preprocessing" class="slide level2">
+<h2>Image preprocessing</h2>
+<ul>
+<li>Keras provides a function <a href="https://keras.io/preprocessing/image/">ImageDataGenerator</a> which can be used as a preprocessing tool.</li>
+<li>It can modify or normalize the pictures with predefined treatment like rescale, rotation, shift, shear, flip, whitening, etc.</li>
+<li>The preprocessing generator can read the images directly from a directory path using the function <code>flow_from_directory</code>.</li>
+<li>The result can be used as an iterator with and infinite loop that generates images in batches.</li>
+</ul>
+</section><section id="training" class="slide level2">
+<h2>Training</h2>
+<ul>
+<li>Keras also provides a method to train images by batches (<code>fit_generator</code>)
+<ul>
+<li>reduce memory utilization.</li>
+<li>image preprocessing to be done in parallel of training process</li>
+</ul></li>
+<li>Requirement: bounding box coordinates and the Fish/NoFish label must be transformed as an iterator.</li>
+</ul>
+</section><section class="slide level2">
+
+<h3 id="train-the-model-by-batch">Train the model by batch</h3>
+<ul>
+<li>The generator that feed the training fonction by batch contains:
+<ul>
+<li>The image generator</li>
+<li>The bounding box coordinates generator</li>
+<li>The Fish/NoFish label</li>
+</ul></li>
+<li>itertools: <a href="https://docs.python.org/2/library/itertools.html#itertools.cycle">cylce</a>, <a href="https://docs.python.org/2/library/itertools.html#itertools.izip">izip</a></li>
+</ul>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="op">&gt;&gt;&gt;</span> itertools.cycle(<span class="st">&#39;ABCD&#39;</span>) 
+A B C D A B C D ...`
+<span class="op">&gt;&gt;&gt;</span> itertools.izip(<span class="st">&#39;ABCD&#39;</span>, <span class="st">&#39;xy&#39;</span>) 
+Ax By`</code></pre></div>
+</section><section id="finetuning-a-pretrained-model" class="slide level2">
+<h2>Finetuning a pretrained model</h2>
+</section></section>
+<section><section id="conclusions" class="titleslide slide level1"><h1>Conclusions</h1></section><section class="slide level2">
+
+<ul>
+<li>Image preprocessing can significantly increase the performance of a classification algorithm.</li>
+<li>A feature descriptor represents a simplified version of an image by extracting useful information and throwing away extraneous information.</li>
+<li>Using feature description increases training speed compared with raw images.</li>
+</ul>
+</section></section>
+    </div>
+  </div>
+
+  <script src="reveal.js/lib/js/head.min.js"></script>
+  <script src="reveal.js/js/reveal.js"></script>
+
+  <script>
+
+      // Full list of configuration options available at:
+      // https://github.com/hakimel/reveal.js#configuration
+      Reveal.initialize({
+
+        // Optional reveal.js plugins
+        dependencies: [
+          { src: 'reveal.js/lib/js/classList.js', condition: function() { return !document.body.classList; } },
+          { src: 'reveal.js/plugin/zoom-js/zoom.js', async: true },
+              { src: 'reveal.js/plugin/notes/notes.js', async: true }
+        ]
+      });
+    </script>
+    </body>
+</html>

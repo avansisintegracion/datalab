@@ -1,0 +1,338 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="pandoc.css" type="text/css" />
+</head>
+<body>
+<h1 id="article-2">Article 2</h1>
+<p>This post is the second part of our experience in the <a href="https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring">kaggle competition</a>. In our previous post we have described how we start the competition, our first approaches, the difficulties of the competition, the tools that we used in terms of project management and organization and some of the main approaches that you can take into account for a image classification project. During this post, we will present the final approaches that we used in the competitions, the outcomes and the conclusions that we obtained in this experience.</p>
+<h1 id="a-more-complete-bag-of-features-approach">A more complete bag of features approach</h1>
+<p>Like many, we noticed that whatever feature detection technique you use, many detection points are for the boat or more globally for the environment that we want to get rid of. In order to limit this issue, we tried to generate a mask to remove large elements such as pieces of boats that are present in the full sized images. The goal for the mask was to remove background elements from the image such as large elements of the boats that are rather squarish and have homogeneous colors and then perform keypoint detection using ORB (very similar results to SURF, that we finally used). We further fine-tuned the idea by adding some gaussian blur and color segmentation to smoothen the shapes as you can see below :</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="im">import</span> cv2
+<span class="im">import</span> numpy <span class="im">as</span> np
+<span class="im">from</span> matplotlib <span class="im">import</span> pyplot <span class="im">as</span> plt
+<span class="im">import</span> matplotlib <span class="im">as</span> mpl
+
+im <span class="op">=</span> <span class="st">&#39;images/3537255216_d766eac288.jpg&#39;</span>
+img <span class="op">=</span> cv2.imread(im)
+
+<span class="co"># Perform keypoint detection on full image</span>
+orb <span class="op">=</span> cv2.ORB_create(nfeatures<span class="op">=</span><span class="dv">3000</span>)
+kp, descs <span class="op">=</span> orb.detectAndCompute(img, <span class="va">None</span>)
+blobs_img_full <span class="op">=</span> cv2.drawKeypoints(img, kp, <span class="va">None</span>, color<span class="op">=</span>(<span class="dv">0</span>,<span class="dv">255</span>,<span class="dv">0</span>), flags<span class="op">=</span><span class="dv">0</span>)
+
+blur <span class="op">=</span> cv2.GaussianBlur(img, (<span class="dv">3</span>, <span class="dv">3</span>), <span class="dv">0</span>)
+Z <span class="op">=</span> blur.reshape((<span class="op">-</span><span class="dv">1</span>,<span class="dv">3</span>))
+<span class="co"># convert to np.float32</span>
+Z <span class="op">=</span> np.float32(Z)
+<span class="co"># define criteria, number of clusters(K) and apply kmeans()</span>
+criteria <span class="op">=</span> (cv2.TERM_CRITERIA_EPS <span class="op">+</span> cv2.TERM_CRITERIA_MAX_ITER, <span class="dv">10</span>, <span class="fl">1.0</span>)
+K <span class="op">=</span> <span class="dv">16</span>
+ret,label,center<span class="op">=</span>cv2.kmeans(Z,K,<span class="va">None</span>,criteria,<span class="dv">10</span>,cv2.KMEANS_RANDOM_CENTERS)
+<span class="co"># Now convert back into uint8, and make original image</span>
+center <span class="op">=</span> np.uint8(center)
+res <span class="op">=</span> center[label.flatten()]
+res2 <span class="op">=</span> res.reshape((blur.shape))
+<span class="co"># Convert to grayscale and apply otsu.</span>
+gray <span class="op">=</span> cv2.cvtColor(res2, cv2.COLOR_BGR2GRAY)
+ret, thresh <span class="op">=</span> cv2.threshold(gray,<span class="dv">0</span>,<span class="dv">255</span>,cv2.THRESH_OTSU)
+
+<span class="co"># Noise removal by contour detection of large elements</span>
+im2, contours, hierarchy <span class="op">=</span> cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+mask <span class="op">=</span> np.zeros(thresh.shape, np.uint8)
+mask2 <span class="op">=</span> np.zeros(thresh.shape, np.<span class="bu">bool</span>)
+<span class="co"># Remove large elements, typically boat structures </span>
+<span class="cf">for</span> c <span class="kw">in</span> contours:
+    <span class="co"># if the contour is not sufficiently large, ignore it</span>
+    <span class="co"># this parameter is highly dependant on the image size</span>
+    <span class="cf">if</span> cv2.contourArea(c) <span class="op">&lt;</span> <span class="dv">20000</span>:
+        <span class="cf">continue</span>
+    cv2.drawContours(mask, [c], <span class="op">-</span><span class="dv">1</span>, (<span class="dv">255</span>, <span class="dv">255</span>, <span class="dv">255</span>), <span class="op">-</span><span class="dv">1</span>)
+mask2[mask <span class="op">&lt;</span> <span class="dv">250</span>] <span class="op">=</span> <span class="va">True</span>
+masked <span class="op">=</span> thresh <span class="op">*</span> mask2
+masked <span class="op">=</span> cv2.cvtColor(masked, cv2.COLOR_GRAY2BGR)
+
+<span class="co"># Perform keypoint detection on masked image</span>
+orb <span class="op">=</span> cv2.ORB_create(nfeatures<span class="op">=</span><span class="dv">3000</span>)
+kp, descs <span class="op">=</span> orb.detectAndCompute(res2 <span class="op">*</span> masked, <span class="va">None</span>)
+blobs_img <span class="op">=</span> cv2.drawKeypoints(img, kp, <span class="va">None</span>, color<span class="op">=</span>(<span class="dv">0</span>,<span class="dv">255</span>,<span class="dv">0</span>), flags<span class="op">=</span><span class="dv">0</span>)
+
+<span class="co"># Plot shape of the mask and the detected keypoints</span>
+font <span class="op">=</span> {<span class="st">&#39;family&#39;</span> : <span class="st">&#39;Arial&#39;</span>,
+        <span class="st">&#39;weight&#39;</span> : <span class="st">&#39;bold&#39;</span>,
+        <span class="st">&#39;size&#39;</span>   : <span class="dv">10</span>}
+mpl.rc(<span class="st">&#39;font&#39;</span>, <span class="op">**</span>font)
+fig, ax <span class="op">=</span> plt.subplots(<span class="dv">2</span>, <span class="dv">4</span>, sharex<span class="op">=</span><span class="va">False</span>, sharey<span class="op">=</span><span class="va">False</span>)
+fig.set_figwidth(<span class="dv">14</span>, forward<span class="op">=</span><span class="va">True</span>)
+fig.set_figheight(<span class="dv">6</span>, forward<span class="op">=</span><span class="va">True</span>)
+
+
+ax[<span class="dv">0</span>, <span class="dv">0</span>].set_aspect(aspect<span class="op">=</span><span class="st">&#39;auto&#39;</span>, adjustable<span class="op">=</span><span class="st">&#39;box-forced&#39;</span>)
+ax[<span class="dv">0</span>, <span class="dv">0</span>].set_title(<span class="st">&#39;Original&#39;</span>)
+ax[<span class="dv">0</span>, <span class="dv">0</span>].axis(<span class="st">&#39;off&#39;</span>)
+ax[<span class="dv">0</span>, <span class="dv">0</span>].imshow(img)
+
+ax[<span class="dv">0</span>, <span class="dv">3</span>].set_aspect(aspect<span class="op">=</span><span class="st">&#39;auto&#39;</span>, adjustable<span class="op">=</span><span class="st">&#39;box-forced&#39;</span>)
+ax[<span class="dv">0</span>, <span class="dv">3</span>].set_title(<span class="st">&#39;ORB on </span><span class="ch">\n</span><span class="st">FULL image&#39;</span>)
+ax[<span class="dv">0</span>, <span class="dv">3</span>].axis(<span class="st">&#39;off&#39;</span>)
+ax[<span class="dv">0</span>, <span class="dv">3</span>].annotate(<span class="st">&#39;&#39;</span>, xy<span class="op">=</span>(<span class="dv">0</span>, <span class="dv">200</span>), xytext<span class="op">=</span>(<span class="op">-</span><span class="dv">1700</span>, <span class="dv">200</span>),
+            arrowprops<span class="op">=</span><span class="bu">dict</span>(facecolor<span class="op">=</span><span class="st">&#39;black&#39;</span>, shrink<span class="op">=</span><span class="fl">0.05</span>),
+            )
+ax[<span class="dv">0</span>, <span class="dv">3</span>].imshow(blobs_img_full)
+
+ax[<span class="dv">0</span>, <span class="dv">1</span>].axis(<span class="st">&#39;off&#39;</span>)
+ax[<span class="dv">0</span>, <span class="dv">2</span>].axis(<span class="st">&#39;off&#39;</span>)
+
+ax[<span class="dv">1</span>, <span class="dv">0</span>].set_aspect(aspect<span class="op">=</span><span class="st">&#39;auto&#39;</span>, adjustable<span class="op">=</span><span class="st">&#39;box-forced&#39;</span>)
+ax[<span class="dv">1</span>, <span class="dv">0</span>].set_title(<span class="st">&#39;Original&#39;</span>)
+ax[<span class="dv">1</span>, <span class="dv">0</span>].axis(<span class="st">&#39;off&#39;</span>)
+ax[<span class="dv">1</span>, <span class="dv">0</span>].imshow(img)
+
+ax[<span class="dv">1</span>, <span class="dv">1</span>].set_aspect(aspect<span class="op">=</span><span class="st">&#39;auto&#39;</span>, adjustable<span class="op">=</span><span class="st">&#39;box-forced&#39;</span>)
+ax[<span class="dv">1</span>, <span class="dv">1</span>].set_title(<span class="st">&#39;Thresholded&#39;</span>)
+ax[<span class="dv">1</span>, <span class="dv">1</span>].axis(<span class="st">&#39;off&#39;</span>)
+ax[<span class="dv">1</span>, <span class="dv">1</span>].annotate(<span class="st">&#39;&#39;</span>, xy<span class="op">=</span>(<span class="dv">0</span>, <span class="dv">200</span>), xytext<span class="op">=</span>(<span class="op">-</span><span class="dv">300</span>, <span class="dv">200</span>),
+            arrowprops<span class="op">=</span><span class="bu">dict</span>(facecolor<span class="op">=</span><span class="st">&#39;black&#39;</span>, shrink<span class="op">=</span><span class="fl">0.05</span>),
+            )
+ax[<span class="dv">1</span>, <span class="dv">1</span>].imshow(thresh, cmap<span class="op">=</span>plt.cm.gray)
+
+ax[<span class="dv">1</span>, <span class="dv">2</span>].set_aspect(aspect<span class="op">=</span><span class="st">&#39;auto&#39;</span>, adjustable<span class="op">=</span><span class="st">&#39;box-forced&#39;</span>)
+ax[<span class="dv">1</span>, <span class="dv">2</span>].set_title(<span class="st">&#39;Thresholded +</span><span class="ch">\n</span><span class="st"> Mask&#39;</span>)
+ax[<span class="dv">1</span>, <span class="dv">2</span>].axis(<span class="st">&#39;off&#39;</span>)
+ax[<span class="dv">1</span>, <span class="dv">2</span>].annotate(<span class="st">&#39;&#39;</span>, xy<span class="op">=</span>(<span class="dv">0</span>, <span class="dv">200</span>), xytext<span class="op">=</span>(<span class="op">-</span><span class="dv">300</span>, <span class="dv">200</span>),
+            arrowprops<span class="op">=</span><span class="bu">dict</span>(facecolor<span class="op">=</span><span class="st">&#39;black&#39;</span>, shrink<span class="op">=</span><span class="fl">0.05</span>),
+            )
+ax[<span class="dv">1</span>, <span class="dv">2</span>].imshow(masked, cmap<span class="op">=</span>plt.cm.gray)
+
+ax[<span class="dv">1</span>, <span class="dv">3</span>].set_aspect(aspect<span class="op">=</span><span class="st">&#39;auto&#39;</span>, adjustable<span class="op">=</span><span class="st">&#39;box-forced&#39;</span>)
+ax[<span class="dv">1</span>, <span class="dv">3</span>].set_title(<span class="st">&#39;ORB on </span><span class="ch">\n</span><span class="st"> masked image&#39;</span>)
+ax[<span class="dv">1</span>, <span class="dv">3</span>].axis(<span class="st">&#39;off&#39;</span>)
+ax[<span class="dv">1</span>, <span class="dv">3</span>].annotate(<span class="st">&#39;&#39;</span>, xy<span class="op">=</span>(<span class="dv">0</span>, <span class="dv">200</span>), xytext<span class="op">=</span>(<span class="op">-</span><span class="dv">300</span>, <span class="dv">200</span>),
+            arrowprops<span class="op">=</span><span class="bu">dict</span>(facecolor<span class="op">=</span><span class="st">&#39;black&#39;</span>, shrink<span class="op">=</span><span class="fl">0.05</span>),
+            )
+ax[<span class="dv">1</span>, <span class="dv">3</span>].imshow(blobs_img)
+
+plt.show()</code></pre></div>
+<div class="figure">
+<img src="./images/output_26_1.png" alt="png" />
+<p class="caption">png</p>
+</div>
+<p>As you can see on the images, it does enable us to remove regions for keypoint detection that surround the fishes, such as the floor or the elements in the top-middle region. This is just one example that is not in the dataset (see NDA), but on the images of the dataset, by playing with the number of colours and size of the elements we were actually able to remove quite a lot of non interesting features. At the same time, you can notice that some of the major elements are also lost such as the fins. They are extremely important in fish classification as their positions, proportions to each other and colours are key to fish species definition as previously discussed.</p>
+<p>The Kernix Lab has been successful by using <a href="https://xgboost.readthedocs.io/en/latest/">XGBoost</a> library for classifications problems, which is a popular gradient boosted machine. So we went on to replace random forest by an optimized xgboost classifier and here are the results we had at the end of the competition :</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python">SVG(filename<span class="op">=</span><span class="st">&#39;images/scores_xgboost.svg&#39;</span>)</code></pre></div>
+<div class="figure">
+<img src="./images/output_28_0.svg" alt="svg" />
+<p class="caption">svg</p>
+</div>
+<p>Logloss score keep rising from validation dataset to the private one when we used random splitting, showing that it was a final poor choice as the private dataset contained many unseen boats so far. Training with a boat-aware splitting, allowed us to have a much more consistent results between the datasets. Even if the results in terms of rank on the leaderboard were not great with this approach, it showed us that this kind of model, even if less accurate than state-of-the-art classifier, they generalize well compared to many and gives consistent results.</p>
+<h1 id="strength-of-deep-learning">Strength of deep learning</h1>
+<h2 id="bounding-box-regression">Bounding box regression</h2>
+<p>A kaggle participant posted in the <a href="https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring/discussion/25902">kaggle forum</a> the coordinates of the bounding box for every fish in the pictures of the train set. This has been made using the labelling software <a href="https://github.com/cvhciKIT/sloth">Sloth</a>. The posted files contain information of the coordinates of the bounding box in terms of the starting point and the size of the box (<code>x</code>, <code>y</code>, <code>width</code> and <code>height</code>). Taking into account that some pictures contain multiple fishes, we tried different approaches like taking only one bounding box per picture, or a combination of the coordinates of the bounding box for each picture to include the maximum number of fishes inside the picture. For instance in the following snippet, we read the different annotations for each class and each picture and then we take the coordinates for the bigger fish in the <code>height</code> and <code>width</code>.</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python">anno_classes <span class="op">=</span> glob.glob(op.join(<span class="va">self</span>.f.data_external_annos, <span class="st">&#39;*.json&#39;</span>))
+bb_json <span class="op">=</span> {}
+<span class="cf">for</span> fish_class <span class="kw">in</span> anno_classes:
+    fish_bb_json <span class="op">=</span> json.load(<span class="bu">open</span>(op.join(fish_class), <span class="st">&#39;r&#39;</span>))
+    <span class="cf">for</span> fish_annotation <span class="kw">in</span> fish_bb_json:
+        <span class="cf">if</span> <span class="bu">len</span>(fish_annotation[<span class="st">&#39;annotations&#39;</span>]) <span class="op">&gt;</span> <span class="dv">0</span>:
+        bb_json[fish_annotation[<span class="st">&#39;filename&#39;</span>].split(<span class="st">&#39;/&#39;</span>)[<span class="op">-</span><span class="dv">1</span>]] <span class="op">=</span> <span class="bu">sorted</span>(
+            fish_annotation[<span class="st">&#39;annotations&#39;</span>], key<span class="op">=</span><span class="kw">lambda</span> x:
+            x[<span class="st">&#39;height&#39;</span>]<span class="op">*</span>x[<span class="st">&#39;width&#39;</span>])[<span class="op">-</span><span class="dv">1</span>]</code></pre></div>
+<p>The pictures that does not contain bounding boxes are filled with empty box coordinates.</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="co"># Get python raw filenames</span>
+raw_filenames <span class="op">=</span> [f.split(<span class="st">&#39;/&#39;</span>)[<span class="op">-</span><span class="dv">1</span>] <span class="cf">for</span> f <span class="kw">in</span> filenames]
+
+<span class="co"># Image that have no annotation, empty bounding box</span>
+empty_bbox <span class="op">=</span> {<span class="st">&#39;x_0&#39;</span>: <span class="dv">0</span>., <span class="st">&#39;y_0&#39;</span>: <span class="dv">0</span>., <span class="st">&#39;x_1&#39;</span>: <span class="dv">0</span>., <span class="st">&#39;y_1&#39;</span>: <span class="dv">0</span>.}
+
+<span class="cf">for</span> f <span class="kw">in</span> raw_filenames:
+<span class="cf">if</span> <span class="kw">not</span> f <span class="kw">in</span> bb_json.keys(): bb_json[f] <span class="op">=</span> empty_bbox</code></pre></div>
+<p>Keras provides a function <a href="https://keras.io/preprocessing/image/">ImageDataGenerator</a> which can be used as a preprocessing tool to modify or normalize the pictures with predefined treatment like rescale, rotation, shift, shear, flip, whitening, etc. The preprocessing generator can read the images directly from a directory path using the function <code>flow_from_directory</code>. The result can be used as an iterator with and infinite loop that generates images in batches.</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="co"># Image preprocessing generator</span>
+train_datagen <span class="op">=</span> image.ImageDataGenerator(rescale<span class="op">=</span><span class="dv">1</span>.<span class="op">/</span><span class="dv">255</span>,)
+
+trn_generator <span class="op">=</span> train_datagen.flow_from_directory(
+        PATH <span class="op">+</span> <span class="st">&#39;train&#39;</span>,
+        target_size<span class="op">=</span>(img_height, img_width),
+        batch_size<span class="op">=</span>batch_size,
+        shuffle<span class="op">=</span><span class="va">False</span>,
+        class_mode<span class="op">=</span><span class="va">None</span>,
+        seed<span class="op">=</span>seed)</code></pre></div>
+<p>Keras also provides a method to train images by batches to reduce memory utilization which is particularly useful when training with GPU with low memory. This also makes image preprocessing to be done in parallel of training process, which optimize CPU utilization. In order to use Keras <code>fit_generator</code> function, the bounding box coordinates and the Fish/NoFish label must be transformed also as an iterator. The concatenation of the batch image generator, the bounding box coordinates generator and the Fish/NoFish label results in a global generator in batch <code>train_generator</code> that can be used to feed the training function using the <code>fit_generator</code> method as detailed later in the article.</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="co"># Boundary boxes dict to np.array </span>
+trn_bbox <span class="op">=</span> np.stack([convert_bb(bb_json[f], s) <span class="cf">for</span> f, s <span class="kw">in</span>
+                     <span class="bu">zip</span>(raw_filenames, sizes)],).astype(np.float32)
+<span class="co">#=&gt; [[&#39;x_0&#39;, &#39;y_0&#39;, &#39;x_1&#39;, &#39;x_0&#39;], [&#39;x_0&#39;, &#39;y_0&#39;, &#39;x_1&#39;, &#39;x_0&#39;],...]</span>
+
+<span class="co"># Fish = 1, NoFish = 0,  (NoFish category label == 4)</span>
+trn_fish_labels <span class="op">=</span> np.asarray([ <span class="dv">0</span> <span class="cf">if</span> ( fish <span class="op">==</span> <span class="dv">4</span> ) <span class="cf">else</span> <span class="dv">1</span> <span class="cf">for</span> fish <span class="kw">in</span> trn_generator.classes ])
+<span class="co">#=&gt; [[1], [1], [0],...]</span>
+
+<span class="co"># Transform np arrays to iteratior</span>
+<span class="kw">def</span> batch(iterable1, iterable2, n<span class="op">=</span><span class="dv">1</span>):
+    l1 <span class="op">=</span> <span class="bu">len</span>(iterable1)
+    l2 <span class="op">=</span> <span class="bu">len</span>(iterable2)
+    <span class="cf">for</span> ndx <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">0</span>, l2, n):
+        <span class="cf">yield</span> [iterable1[ndx:<span class="bu">min</span>(ndx <span class="op">+</span> n, l1)], iterable2[ndx:<span class="bu">min</span>(ndx <span class="op">+</span> n, l2)]]
+
+trn_bbox_generator <span class="op">=</span> (n <span class="cf">for</span> n <span class="kw">in</span> itertools.cycle(batch(trn_bbox, trn_fish_labels,
+                                                       n<span class="op">=</span>batch_size)))
+<span class="co"># Concatenation of image and labels iterator</span>
+train_generator <span class="op">=</span> itertools.izip(trn_generator, trn_bbox_generator)</code></pre></div>
+<h2 id="fine-tunned-model">Fine tunned model</h2>
+<p>We fine-tuned a convent model with different pretrained architectures like <a href="http://www.robots.ox.ac.uk/~vgg/research/very_deep/">VGG16</a>, <a href="http:/://arxiv.org/abs/1512.00567">InceptionV3</a>, <a href="https://arxiv.org/abs/1611.05431">ResNet50</a>.</p>
+<p>A pretrained network can determine universal features like curves and edges in its early layers, those are relevant and useful to most of the classification problems. These pretrained models are composed by complex architecture with huge amount of parametres, trained on large datasets like the <a href="http://www.image-net.org/challenges/LSVRC/">ImageNet</a>, with 1.2M labelled images. The most common practice is to truncate the last layer of the pretrained network and replace it with a new softmax layer with the number of class desirable for the new problem.</p>
+<p>The last layer of the model is <strong>fine tuned</strong> to obtain a fish and no fish classification <code>x_fish</code> and also the coordinates of the identified fish <code>x_fish</code>. <a href="http://https://github.com/fchollet/keras">Keras</a> contains deep learning models alongside with the pretrained with pre-trained weights. In the snipped below, we load InceptionV3 model with the pre-trainedweights on <a href="http://www.image-net.org/challenges/LSVRC/">ImageNet</a>. Inception V3 has been trained with <code>299x299x3</code> images, which is the default parameter but it is posible to modify the size with the parameter <code>input_shape</code>. The fine tunning is done removing the top layers (AveragePooling2D, Flatten and Dense) and replacing them by dense layers with the size of the desired classification. The parameters of the top layers replaced remains the same as the initial inception model. Like the <a href="http://cs231n.github.io/convolutional-networks/">Standfor Convolutional Neural networks document</a> says:</p>
+<blockquote>
+<p>&quot;don’t be a hero&quot;: Instead of rolling your own architecture for a problem, you should look at whatever architecture currently works best on ImageNet</p>
+</blockquote>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python">base_model <span class="op">=</span> InceptionV3(include_top<span class="op">=</span><span class="va">False</span>, weights<span class="op">=</span><span class="st">&#39;imagenet&#39;</span>,
+                         input_tensor<span class="op">=</span><span class="va">None</span>, input_shape<span class="op">=</span>(img_height, img_width, <span class="dv">3</span>))
+output <span class="op">=</span> base_model.get_layer(index<span class="op">=-</span><span class="dv">1</span>).output  <span class="co"># Shape: (8, 8, 2048)</span>
+output <span class="op">=</span> AveragePooling2D((<span class="dv">8</span>, <span class="dv">8</span>), strides<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">8</span>),
+                          name<span class="op">=</span><span class="st">&#39;avg_pool&#39;</span>)(output)
+output <span class="op">=</span> Flatten(name<span class="op">=</span><span class="st">&#39;flatten&#39;</span>)(output)
+x_bb <span class="op">=</span> Dense(<span class="dv">4</span>, name<span class="op">=</span><span class="st">&#39;bb&#39;</span>)(output)
+x_fish <span class="op">=</span> Dense(<span class="dv">1</span>, activation<span class="op">=</span><span class="st">&#39;sigmoid&#39;</span>, name<span class="op">=</span><span class="st">&#39;fish&#39;</span>)(output)
+model <span class="op">=</span> Model(base_model.<span class="bu">input</span>, [x_bb, x_fish])</code></pre></div>
+<p>The loss function used to train the model is a <a href="https://en.wikipedia.org/wiki/Mean_squared_error">mean square error</a> in case of the bounding box regression and <code>binary crossentropy</code> for the fish/nofish classification. We use the <a href="https://keras.io/optimizers/#sgd">stochastic gradient descent optimizer</a> to train our model and an initialization using momentum and a <a href="http://www.cs.toronto.edu/~fritz/absps/momentum.pdf">nesterov scheme</a> to accelerate convergence. Finaly, we train the model using the <code>train_generator</code> which delivers the images, the bounding box and the fish labels by batches. The batch size depends on the memory of the GPU, the size of the image and the size of the neural network used to train the model. For example using <code>InceptionV3</code>, image size of <code>640x360</code> and a <a href="http://www.geforce.com/hardware/desktop-gpus/geforce-gtx-titan/specifications">GPU Titan</a> with 6Gb, the batch size can be 16. We separate the train set in two to obtain a validation set, we create a generator to obtain the validation images, bounding box and fish labels by batches the same way as we did for <code>train_generator</code>.</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python">optimizer <span class="op">=</span> SGD(lr<span class="op">=</span>learning_rate, momentum<span class="op">=</span><span class="fl">0.9</span>, decay<span class="op">=</span><span class="fl">0.0</span>,
+                nesterov<span class="op">=</span><span class="va">True</span>)
+model.<span class="bu">compile</span>(loss<span class="op">=</span>[<span class="st">&#39;mse&#39;</span>, <span class="st">&#39;binary_crossentropy&#39;</span>],
+              optimizer<span class="op">=</span>optimizer, metrics<span class="op">=</span>[<span class="st">&#39;accuracy&#39;</span>],
+              loss_weights<span class="op">=</span>[<span class="fl">0.001</span>, <span class="dv">1</span>.])
+
+<span class="co"># Train model</span>
+model.fit_generator(train_generator,
+                    samples_per_epoch<span class="op">=</span>nbr_train_samples,
+                    nb_epoch<span class="op">=</span>nbr_epoch,
+                    validation_data<span class="op">=</span>validation_generator,
+                    nb_val_samples<span class="op">=</span>nbr_val_samples,
+                    callbacks<span class="op">=</span>callbacks_list)</code></pre></div>
+<p>We obtained better results with the inception network proposed from the keras function. Inception network is built from convolutional building blocks. This architecture is especially useful in the context of localization and object detection. There has been different version of Inception <code>v1</code>, <code>v2</code>, <code>v3</code>. The version <code>Inception v3</code> is a variant of the <a href="https://arxiv.org/pdf/1409.4842v1.pdf">GoogleNet network</a> with the implementation of <em>batch normalization</em>. This refers to an additional normalization of the fully connected layer of the auxiliary classifier and not only the convolution blocks.</p>
+<hr />
+<h2 id="cropping-results">Cropping results</h2>
+<p>The model is trained to decrease the absolute distance between the predicted coordinates and the existing ones, but a more common metric to measure object detection techniques is the <a href="http://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/">intersection over union</a>. Basically it is the ratio of the common and the total area of the predicted and the ground truth bounding box. The obtained results are not satisfactory because the predicted bounding boxes does not intersect the bounding box used for validation. This occurs because some pictures contains several fishes, then the model hardly generalize to select the biggest fish in the picture. In addition it does not provide a good generalization because of the great difference of the pictures of the train and test set.</p>
+<div class="figure">
+<img src="images/histotrain.jpg" />
+
+</div>
+<h1 id="using-neural-networks-to-make-fish-classification">Using neural networks to make fish classification</h1>
+<p>Similar to the regression model used to obtain the coordinates of the bounding box, the classification can be obtained by doing fine tuning the last layer of the pretrained model to obtain the classification of the fish. The only thing that changes is the last layer <code>x_class</code> with 8 different outputs:</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python">base_model <span class="op">=</span> InceptionV3(include_top<span class="op">=</span><span class="va">False</span>, weights<span class="op">=</span><span class="st">&#39;imagenet&#39;</span>,
+                         input_tensor<span class="op">=</span><span class="va">None</span>, input_shape<span class="op">=</span>(img_height, img_width, <span class="dv">3</span>))
+output <span class="op">=</span> base_model.get_layer(index<span class="op">=-</span><span class="dv">1</span>).output  <span class="co"># Shape: (8, 8, 2048)</span>
+output <span class="op">=</span> AveragePooling2D((<span class="dv">8</span>, <span class="dv">8</span>), strides<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">8</span>),
+                          name<span class="op">=</span><span class="st">&#39;avg_pool&#39;</span>)(output)
+output <span class="op">=</span> Flatten(name<span class="op">=</span><span class="st">&#39;flatten&#39;</span>)(output)
+x_class <span class="op">=</span> Dense(<span class="dv">8</span>, name<span class="op">=</span><span class="st">&#39;class&#39;</span>)(output)
+model <span class="op">=</span> Model(base_model.<span class="bu">input</span>, x_class)</code></pre></div>
+<p>The results are highly affected by the way we split the train set, as we seen in the <a href="REF">article 1</a>. Using a random split we obtain a validation log loss of 0.4 and 1.02 for the submission test in the public leader board. This shows that the model overfits over the training set. Using a split with different boats in the train and validation set, we obtain a log loss of 0.98 and 1.3 in the public leader board. This split allows us to obtain an estimation of what would be the score on the public leader board without making a submission on the kaggle platform. However, the predictions of this model in the public leader board are worse than the one used a random split because the trained model see less boats than the random split.</p>
+<table style="width:33%;">
+<colgroup>
+<col width="5%" />
+<col width="5%" />
+<col width="5%" />
+<col width="5%" />
+<col width="5%" />
+<col width="5%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th>-</th>
+<th>Random split</th>
+<th>-</th>
+<th>-</th>
+<th>Boat split</th>
+<th>-</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Validation</td>
+<td>Public leaderboard</td>
+<td>Private leaderboard</td>
+<td>Validation</td>
+<td>Public leaderboard</td>
+<td>Private leaderboard</td>
+</tr>
+<tr class="even">
+<td>0.4</td>
+<td>1.02</td>
+<td>2.66</td>
+<td>0.98</td>
+<td>1.3</td>
+<td>2.65</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Different boat split</strong></p>
+<p>The log loss and the accuracy obtained while training the model is not enough to evaluate the performance of the model, specially in a multi categorical and unbalanced problem like this. This is why we use <a href="https://en.wikipedia.org/wiki/Confusion_matrix">confusion matrix</a> to see the number of right and wrong predicted photos for each class. As shown below, we can see that the model does not predict correctly the non representative classes like the big eyed tuna (BET), the moonfish (LAG) or the other class.</p>
+<div class="figure">
+<img src="images/cmInceptionBoatSplit.svg" />
+
+</div>
+<p>In addition we calculate the probability distribution for each class to see if the model is confident of the predictions that it made for each class. The model is more confident for the predictions of the albacore (ALB), yellow fish tuna (YFT) and a few sharks (SHK).</p>
+<div class="figure">
+<img src="images/pdInceptionBoatSplit.svg" />
+
+</div>
+<p><strong>Random split</strong></p>
+<p>Using a random split the model see more boat pictures but since some pictures of each boat are very similar (video sequences) the validation log loss becomes very optimistic because it validates with photos very similar to the ones seen during the training. In consequence, the predictions seems very accurate as show in the following confusion matrix.</p>
+<div class="figure">
+<img src="images/cmInceptionRandomSplit.svg" />
+
+</div>
+<p>In addition the model is more confident of the predictions made. As can be seen for classes</p>
+<div class="figure">
+<img src="images/pdInceptionRandomSplit.svg" />
+
+</div>
+<h1 id="conclusion-perspective">Conclusion &amp; perspective</h1>
+<ul>
+<li>Clipping to reduce the penalization from log loss score</li>
+<li>Winning solution include state of the art algorithms like <a href="https://github.com/rykov8/ssd_keras">SSD</a></li>
+</ul>
+</body>
+</html>

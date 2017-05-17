@@ -13,117 +13,6 @@ the outcomes and the conclusions that we obtained in this experience.
 
 Like many, we noticed that whatever feature detection technique you use, many detection points are for the boat or more globally for the environment that we want to get rid of. In order to limit this issue, we tried to generate a mask to remove large elements such as pieces of boats that are present in the full sized images. The goal for the mask was to remove background elements from the image such as large elements of the boats that are rather squarish and have homogeneous colors and then perform keypoint detection using ORB (very similar results to SURF, that we finally used). We further fine-tuned the idea by adding some gaussian blur and color segmentation to smoothen the shapes as you can see below : 
 
-
-```python
-import cv2
-import numpy as np
-from matplotlib import pyplot as plt
-import matplotlib as mpl
-
-im = 'images/3537255216_d766eac288.jpg'
-img = cv2.imread(im)
-
-# Perform keypoint detection on full image
-orb = cv2.ORB_create(nfeatures=3000)
-kp, descs = orb.detectAndCompute(img, None)
-blobs_img_full = cv2.drawKeypoints(img, kp, None, color=(0,255,0), flags=0)
-
-blur = cv2.GaussianBlur(img, (3, 3), 0)
-Z = blur.reshape((-1,3))
-# convert to np.float32
-Z = np.float32(Z)
-# define criteria, number of clusters(K) and apply kmeans()
-criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-K = 16
-ret,label,center=cv2.kmeans(Z,K,None,criteria,10,cv2.KMEANS_RANDOM_CENTERS)
-# Now convert back into uint8, and make original image
-center = np.uint8(center)
-res = center[label.flatten()]
-res2 = res.reshape((blur.shape))
-# Convert to grayscale and apply otsu.
-gray = cv2.cvtColor(res2, cv2.COLOR_BGR2GRAY)
-ret, thresh = cv2.threshold(gray,0,255,cv2.THRESH_OTSU)
-
-# Noise removal by contour detection of large elements
-im2, contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-mask = np.zeros(thresh.shape, np.uint8)
-mask2 = np.zeros(thresh.shape, np.bool)
-# Remove large elements, typically boat structures 
-for c in contours:
-    # if the contour is not sufficiently large, ignore it
-    # this parameter is highly dependant on the image size
-    if cv2.contourArea(c) < 20000:
-        continue
-    cv2.drawContours(mask, [c], -1, (255, 255, 255), -1)
-mask2[mask < 250] = True
-masked = thresh * mask2
-masked = cv2.cvtColor(masked, cv2.COLOR_GRAY2BGR)
-
-# Perform keypoint detection on masked image
-orb = cv2.ORB_create(nfeatures=3000)
-kp, descs = orb.detectAndCompute(res2 * masked, None)
-blobs_img = cv2.drawKeypoints(img, kp, None, color=(0,255,0), flags=0)
-
-# Plot shape of the mask and the detected keypoints
-font = {'family' : 'Arial',
-        'weight' : 'bold',
-        'size'   : 10}
-mpl.rc('font', **font)
-fig, ax = plt.subplots(2, 4, sharex=False, sharey=False)
-fig.set_figwidth(14, forward=True)
-fig.set_figheight(6, forward=True)
-
-
-ax[0, 0].set_aspect(aspect='auto', adjustable='box-forced')
-ax[0, 0].set_title('Original')
-ax[0, 0].axis('off')
-ax[0, 0].imshow(img)
-
-ax[0, 3].set_aspect(aspect='auto', adjustable='box-forced')
-ax[0, 3].set_title('ORB on \nFULL image')
-ax[0, 3].axis('off')
-ax[0, 3].annotate('', xy=(0, 200), xytext=(-1700, 200),
-            arrowprops=dict(facecolor='black', shrink=0.05),
-            )
-ax[0, 3].imshow(blobs_img_full)
-
-ax[0, 1].axis('off')
-ax[0, 2].axis('off')
-
-ax[1, 0].set_aspect(aspect='auto', adjustable='box-forced')
-ax[1, 0].set_title('Original')
-ax[1, 0].axis('off')
-ax[1, 0].imshow(img)
-
-ax[1, 1].set_aspect(aspect='auto', adjustable='box-forced')
-ax[1, 1].set_title('Thresholded')
-ax[1, 1].axis('off')
-ax[1, 1].annotate('', xy=(0, 200), xytext=(-300, 200),
-            arrowprops=dict(facecolor='black', shrink=0.05),
-            )
-ax[1, 1].imshow(thresh, cmap=plt.cm.gray)
-
-ax[1, 2].set_aspect(aspect='auto', adjustable='box-forced')
-ax[1, 2].set_title('Thresholded +\n Mask')
-ax[1, 2].axis('off')
-ax[1, 2].annotate('', xy=(0, 200), xytext=(-300, 200),
-            arrowprops=dict(facecolor='black', shrink=0.05),
-            )
-ax[1, 2].imshow(masked, cmap=plt.cm.gray)
-
-ax[1, 3].set_aspect(aspect='auto', adjustable='box-forced')
-ax[1, 3].set_title('ORB on \n masked image')
-ax[1, 3].axis('off')
-ax[1, 3].annotate('', xy=(0, 200), xytext=(-300, 200),
-            arrowprops=dict(facecolor='black', shrink=0.05),
-            )
-ax[1, 3].imshow(blobs_img)
-
-plt.show()
-```
-
-![png](./images/output_26_1.png)
-
 As you can see on the images, it does enable us to remove regions for keypoint detection that surround the fishes, such as the floor or the elements in the top-middle region. This is just one example that is not in the dataset (see NDA), but on the images of the dataset, by playing with the number of colours and size of the elements we were actually able to remove quite a lot of non interesting features. At the same time, you can notice that some of the major elements are also lost such as the fins. They are extremely important in fish classification as their positions, proportions to each other and colours are key to fish species definition as previously discussed.
 
 The Kernix Lab has been successful by using [XGBoost](https://xgboost.readthedocs.io/en/latest/) library for classifications problems, which is a popular gradient boosted machine. So we went on to replace random forest by an optimized xgboost classifier and here are the results we had at the end of the competition :
@@ -204,10 +93,9 @@ which is particularly useful when training with GPU with low memory. This also
 makes image preprocessing to be done in parallel of training process, which
 optimize CPU utilization.  In order to use Keras `fit_generator` function, the bounding
 box coordinates and the Fish/NoFish label must be transformed also as an
-iterator.  The concatenation of the batch image generator, the bounding box
-coordinates generator and the Fish/NoFish label results in a global generator
-in batch `train_generator` that can be used to feed the training function using
-the `fit_generator` method as detailed later in the article.
+iterator. The iterator used to feed the training function contains the concatenation of the image generator, the bounding box
+coordinates generator and the Fish/NoFish label. this iterator is called `train_generator` 
+and send batches of values to the `fit_generator` fonction.
 
 
 ```python
@@ -231,7 +119,6 @@ trn_bbox_generator = (n for n in itertools.cycle(batch(trn_bbox, trn_fish_labels
                                                        n=batch_size)))
 # Concatenation of image and labels iterator
 train_generator = itertools.izip(trn_generator, trn_bbox_generator)
-
 ```
 
 ## Fine tunned model
@@ -326,7 +213,9 @@ difference of the pictures of the train and test set.
 
 # Using neural networks to make fish classification
 
-Similar to the regression model used to obtain the coordinates of the bounding box, the classification can be obtain by doing some fine tuned to obtain the classification of the fish. 
+Similar to the regression model used to obtain the coordinates of the bounding
+box, the classification can be obtained by doing fine tuning the last layer of
+the pretrained model to obtain the classification of the fish. 
 The only thing that changes is the last layer `x_class` with 8 different outputs:
 
 ```python
@@ -340,28 +229,40 @@ x_class = Dense(8, name='class')(output)
 model = Model(base_model.input, x_class)
 ```
 
-The results are highly affected by the way we split the train set, as we highlighted in the [article 1](REF). Using a random split a validation log loss of 0.4 for the validation set and 1.02 for the submission in the public leader board. 
+The results are highly affected by the way we split the train set, as we
+seen in the [article 1](REF). Using a random split we obtain a validation log loss
+of 0.4 and 1.02 for the submission test in the public leader board. 
 This shows that the model overfits over the training set.
-Using a split with different boats in the validation set  we obtain a log loss of 0.98 and 1.3 in the public leader board. 
-Using this split we are able to test better our model with making submission but when we use it to predict the submission over the test set of the public leader board we obtain worse results than the random split because our model have seen less boats.
-
-
-**Different boat split** 
-
-![](images/cmInceptionBoatSplit.png){ height="320" width="320"}
-![](images/pdInceptionBoatSplit.png){ height="320" width="320"}
-
-
-**Random split**
-
-![](images/cmInceptionRandomSplit.png){ height="320" width="320"}
-![](images/pdInceptionRandomSplit.png){ height="320" width="320"}
-
+Using a split with different boats in the train and validation set, we obtain a
+log loss of 0.98 and 1.3 in the public leader board. 
+This split allows us to obtain an estimation of what would be the score on the public leader board without making a submission on the kaggle platform. However, the predictions of this model in the public leader board are worse than the one used a random split because the trained model see less boats than the random split.
 
 -|Random split|-|-|Boat split|-
 ---|---|--- |--- |---|---
 Validation|Public leaderboard | Private leaderboard| Validation|Public leaderboard | Private leaderboard
 0.4| 1.02 |  2.66 | 0.98|1.3 | 2.65
+
+**Different boat split** 
+
+The log loss and the accuracy obtained while training the model is not enough to evaluate the performance of the model, specially in a multi categorical and unbalanced problem like this. This is why we use [confusion matrix](https://en.wikipedia.org/wiki/Confusion_matrix) to see the number of right and wrong predicted photos for each class. As shown below, we can see that the model does not predict correctly the non representative classes like the big eyed tuna (BET), the moonfish (LAG) or the other class. 
+
+![](images/cmInceptionBoatSplit.svg)
+
+In addition we calculate the probability distribution for each class to see if the model is confident of the predictions that it made for each class. The model is more confident for the predictions of the albacore (ALB), yellow fish tuna (YFT) and a few sharks (SHK).
+
+![](images/pdInceptionBoatSplit.svg)
+
+**Random split**
+
+Using a random split the model see more boat pictures but since some pictures of each boat are very similar (video sequences) the validation log loss becomes very optimistic because it validates with photos very similar to the ones seen during the training.
+In consequence, the predictions seems very accurate as show in the following confusion matrix.
+
+![](images/cmInceptionRandomSplit.svg)
+
+In addition the model is more confident of the predictions made. As can be seen for classes like shark (SHK), 
+
+![](images/pdInceptionRandomSplit.svg)
+
 
 # Conclusion & perspective
 
