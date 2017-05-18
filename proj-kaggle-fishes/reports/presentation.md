@@ -3,30 +3,31 @@ title: Partage de connaissance
 subtitle: Compétition kaggle 🐟
 author: Cristian, Mikael
 date: 2017-05-23
----
 
+---
 
 # 1. The competition and the data
 
-## Starting point
+## <font color="white">Starting point </font> {data-background="https://media.giphy.com/media/WfNIOjdnCh212/giphy.gif?response_id=591d519f2c191af3c3ffbedd"}
 
-In the Western and Central Pacific, 60% of the world’s tuna is caught illegally, a threat to marine ecosystem.
+<font color="white">In the Western and Central Pacific, 60% of the world’s tuna is caught illegally, a threat to marine ecosystem.</font> 
 
-
-## Goal of the competition
+## Goal of the competition 
 
 Automate fish detection on pictures from fishing boats.
 (with machine learning)
 
-## Images classes
+![](https://kaggle2.blob.core.windows.net/competitions/kaggle/5568/media/TNC.mp4 "opt title"){width=80% height=400px class="video data-autoplay"}
+
+## Images classes 
 
 ![](images/fish_classes.jpeg){class=plain}
 
 ## Data
 
-Name | Number of photos
----|---
-Train | 3777
+Name         | Number of photos
+---          | ---
+Train        | 3777
 Test stage 1 | 1000
 Test stage 2 | 12000
 
@@ -48,12 +49,12 @@ Test stage 2 | 12000
 
 ## Important dates
 
-Stage | Date
----|---
+Stage             | Date
+---               | ---
 Competition start | 14 Nov 2016
-We start 🎉 | 13 Jan  2017
-End stage 1 | 6 April 2017
-End stage 2 | 13 April 2017
+We start 🎉       | 13 Jan  2017
+End stage 1       | 6 April 2017
+End stage 2       | 13 April 2017
 
 # 2. Computer vision based approach
 
@@ -147,17 +148,16 @@ Every picture was
 * Data augmentation by selecting multiple fishes per pictures
 * No Fish : empty coordinates.
 
-## Image preprocessing
+## Image preprocessing with keras
 
-* Keras provides a function
-  [ImageDataGenerator](https://keras.io/preprocessing/image/) which can be used
-as a preprocessing tool.
-* It can modify or normalize the pictures with predefined treatment like
-  rescale, rotation, shift, shear, flip, whitening, etc.
-* The preprocessing generator can read the images directly from a directory
-  path using the function `flow_from_directory`.
-* The result can be used as an iterator with and infinite loop that generates
-  images in batches.
+* Preprocessing with Keras ([ImageDataGenerator](https://keras.io/preprocessing/image/))
+    * Rescale, rotation, shift, shear, flip, whitening, etc.
+
+* Preprocessing generator `flow_from_directory`:
+    * Read images form a directory.
+    * Assign class for each subdirectory
+    * Generates batches of augmented/normalized data 
+    * Yields batches indefinitely, in an infinite loop.
 
 
 ## Training
@@ -187,8 +187,32 @@ A B C D A B C D ...`
 Ax By`
 ```
 
-## Finetuning a pretrained model
+## Pretrained model
 
+* Pretrained network determine universal features (curves and edges in its early layers). 
+
+* Pretrained models 
+    * Complex architecture with huge amount of parametres
+    * Trained on large datasets like the ImageNet, with 1.2M labelled images. 
+
+
+## Fine tuning 
+
+* Replace last layer it with a new softmax layer with the number of class
+ 
+![](images/transfer_learning.png "opt title")
+
+## Image augmentation
+
+* Rescale `[0:255] -> [0.:1.]` 
+    * InceptionV3 graph operates on floating point values
+
+* shear
+
+![shear](images/shear-before.jpeg)
+![shear after](images/shear-after.jpeg)
+
+* rotation, shift, shear, flip, whitening, etc.
 
 # 5. Elements of conclusion
 
