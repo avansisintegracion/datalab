@@ -17,7 +17,10 @@ date: 2017-05-23
 Automate fish detection on pictures from fishing boats.
 (with machine learning)
 
-![](https://kaggle2.blob.core.windows.net/competitions/kaggle/5568/media/TNC.mp4 "opt title"){width=80% height=400px class="video data-autoplay"}
+<video controls="controls" poster="https://kaggle2.blob.core.windows.net/competitions/kaggle/5568/media/TNC-poster-640x360.png" width="640" height="360">
+  <source src="https://kaggle2.blob.core.windows.net/competitions/kaggle/5568/media/TNC.mp4" type="video/mp4">
+Your browser does not support the video tag.
+</video>
 
 ## Images classes 
 
@@ -74,15 +77,28 @@ End stage 2       | 13 April 2017
 
 ![](images/interest_point_detection.png){width=70% class=plain}
 
-## Scoring
+## Take into account the cameras
 
-![](images/scores_xgboost.svg){width=70% class=plain}
+![](images/img_00020.jpg){width=30% class=plain}
+![](images/img_00029.jpg){width=30% class=plain}
+![](images/img_00038.jpg){width=30% class=plain}
+
+Developped a Custom splitting
+
+
+## Final scoring
+
+![](images/scores_xgboost.svg){width=71% class=plain}
+
+* Difficult to engineer the features
+* Model robust for prediction on new data
+* Top 1, private leaderboard : 1.06
 
 # 3. A methodological break
 
 ## Cookiecutter
 
-```shell
+```txt
 ├── LICENSE
 ├── Makefile           <- Makefile with commands like 'make data' or 'make train'
 ├── README.md          <- The top-level README for developers using this project.
@@ -129,10 +145,90 @@ End stage 2       | 13 April 2017
 
 ```
 
+Note : Cookiecutter is based on jinja2...
+
+[Source](https://drivendata.github.io/cookiecutter-data-science/)
 
 ## Data abstraction layer
 
-Every picture was
+```python
+class ProjFolder(objdict):
+    """
+    A class to define project's subfolders for easy access.
+    """
+    def __init__(self):
+        # level data
+        self.datafolder = op.join(ROOTFOLDER, 'data')
+        for subfol in ['external', 'interim', 'processed', 'raw']:
+            setattr(self,
+                    'data_' + subfol,
+                    op.join(self.datafolder, subfol))
+
+        # level data external
+        for subfol in ['annos', 'rotate_crop']:
+            setattr(self,
+                    'data_external_' + subfol,
+                    op.join(self.data_external, subfol))
+
+        # level data interim
+        for subfol in ['train', 'test']:
+            setattr(self,
+                    'data_interim_' + subfol,
+                    op.join(self.data_interim, subfol))
+
+        for subfol in ['crop', 'generated', 'rotatecrop', 'raw']:
+            setattr(self,
+                    'data_interim_train_' + subfol,
+                    op.join(self.data_interim_train, subfol))
+
+        for subfol in ['train', 'val']:
+            setattr(self,
+                    'data_interim_train_crop_' + subfol,
+                    op.join(self.data_interim_train_crop, subfol))
+
+        for subfol in ['train', 'val']:
+            setattr(self,
+                    'data_interim_train_rotatecrop_' + subfol,
+                    op.join(self.data_interim_train_rotatecrop, subfol))
+
+        # level data processed
+        # for subfol in []:
+        #     setattr(self,
+        #             'data_processed_' + subfol,
+        #             op.join(self.data_processed, subfol))
+
+        # level data raw
+        for subfol in ['train', 'test', 'test2']:
+            setattr(self,
+                    'data_raw_' + subfol,
+                    op.join(self.data_raw, subfol))
+
+    def make_folder(self):
+        for directory in self.values():
+            if not op.exists(directory):
+                os.makedirs(directory)
+
+```
+
+## Data abstraction layer II
+
+Every image had properties saved into json:
+
+* name
+* image name
+* path to raw
+* path to cropped
+* fish type
+* ...
+
+## Advantages
+
+* Stimulates **clear** code file structure
+* Speed to get folder structure
+* Pythonic, object oriented
+* Fast to expand analysis
+
+## The break is over ;)
 
 # 4. Deep learning approach
 
@@ -217,6 +313,23 @@ Ax By`
 # 5. Elements of conclusion
 
 -------------
+
+## What we learned
+
+- Working together in an efficient manner
+- Getting fair results 'easily'
+- Kaggle organizer can mess things up quite a bit (stage 1/2)
+- How to work with images and machine learning (computer vision & convnet)
+- Specificities of the dataset : boat splitting, tiny differences between species...
+
+## What the best contestants did
+
+- Massive ensembling
+- State-of-the-art object detection (FastRCNN, SSD,...)
+- Used pretrained models that are hardly available for newcomers (not implemented in current standard libraries)
+- Spent more time
+
+## Not sure if it should be kept... or how to organize
 
 - Image preprocessing can significantly increase the performance of a
   classification algorithm.

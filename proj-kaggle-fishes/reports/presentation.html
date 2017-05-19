@@ -78,9 +78,9 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 </section><section id="goal-of-the-competition" class="slide level2">
 <h2>Goal of the competition</h2>
 <p>Automate fish detection on pictures from fishing boats. (with machine learning)</p>
-<figure>
-<embed src="https://kaggle2.blob.core.windows.net/competitions/kaggle/5568/media/TNC.mp4" title="opt title" class="video data-autoplay" style="width:80.0%" height="400" />
-</figure>
+<video controls="controls" poster="https://kaggle2.blob.core.windows.net/competitions/kaggle/5568/media/TNC-poster-640x360.png" width="640" height="360">
+<source src="https://kaggle2.blob.core.windows.net/competitions/kaggle/5568/media/TNC.mp4" type="video/mp4"> Your browser does not support the video tag.
+</video>
 </section><section id="images-classes" class="slide level2">
 <h2>Images classes</h2>
 <figure>
@@ -178,15 +178,24 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <figure>
 <img src="images/interest_point_detection.png" class="plain" style="width:70.0%" />
 </figure>
-</section><section id="scoring" class="slide level2">
-<h2>Scoring</h2>
+</section><section id="take-into-account-the-cameras" class="slide level2">
+<h2>Take into account the cameras</h2>
+<p><img src="images/img_00020.jpg" class="plain" style="width:30.0%" /> <img src="images/img_00029.jpg" class="plain" style="width:30.0%" /> <img src="images/img_00038.jpg" class="plain" style="width:30.0%" /></p>
+<p>Developped a Custom splitting</p>
+</section><section id="final-scoring" class="slide level2">
+<h2>Final scoring</h2>
 <figure>
-<img src="images/scores_xgboost.svg" class="plain" style="width:70.0%" />
+<img src="images/scores_xgboost.svg" class="plain" style="width:71.0%" />
 </figure>
+<ul>
+<li>Difficult to engineer the features</li>
+<li>Model robust for prediction on new data</li>
+<li>Top 1, private leaderboard : 1.06</li>
+</ul>
 </section></section>
 <section><section id="a-methodological-break" class="titleslide slide level1"><h1>3. A methodological break</h1></section><section id="cookiecutter" class="slide level2">
 <h2>Cookiecutter</h2>
-<pre class="shell"><code>├── LICENSE
+<pre class="txt"><code>├── LICENSE
 ├── Makefile           &lt;- Makefile with commands like &#39;make data&#39; or &#39;make train&#39;
 ├── README.md          &lt;- The top-level README for developers using this project.
 ├── data
@@ -230,9 +239,86 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 │
 └── tox.ini            &lt;- tox file with settings for running tox; see tox.testrun.org
 </code></pre>
+<p>Note : Cookiecutter is based on jinja2...</p>
+<p><a href="https://drivendata.github.io/cookiecutter-data-science/">Source</a></p>
 </section><section id="data-abstraction-layer" class="slide level2">
 <h2>Data abstraction layer</h2>
-<p>Every picture was</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="kw">class</span> ProjFolder(objdict):
+    <span class="co">&quot;&quot;&quot;</span>
+<span class="co">    A class to define project&#39;s subfolders for easy access.</span>
+<span class="co">    &quot;&quot;&quot;</span>
+    <span class="kw">def</span> <span class="fu">__init__</span>(<span class="va">self</span>):
+        <span class="co"># level data</span>
+        <span class="va">self</span>.datafolder <span class="op">=</span> op.join(ROOTFOLDER, <span class="st">&#39;data&#39;</span>)
+        <span class="cf">for</span> subfol <span class="kw">in</span> [<span class="st">&#39;external&#39;</span>, <span class="st">&#39;interim&#39;</span>, <span class="st">&#39;processed&#39;</span>, <span class="st">&#39;raw&#39;</span>]:
+            <span class="bu">setattr</span>(<span class="va">self</span>,
+                    <span class="st">&#39;data_&#39;</span> <span class="op">+</span> subfol,
+                    op.join(<span class="va">self</span>.datafolder, subfol))
+
+        <span class="co"># level data external</span>
+        <span class="cf">for</span> subfol <span class="kw">in</span> [<span class="st">&#39;annos&#39;</span>, <span class="st">&#39;rotate_crop&#39;</span>]:
+            <span class="bu">setattr</span>(<span class="va">self</span>,
+                    <span class="st">&#39;data_external_&#39;</span> <span class="op">+</span> subfol,
+                    op.join(<span class="va">self</span>.data_external, subfol))
+
+        <span class="co"># level data interim</span>
+        <span class="cf">for</span> subfol <span class="kw">in</span> [<span class="st">&#39;train&#39;</span>, <span class="st">&#39;test&#39;</span>]:
+            <span class="bu">setattr</span>(<span class="va">self</span>,
+                    <span class="st">&#39;data_interim_&#39;</span> <span class="op">+</span> subfol,
+                    op.join(<span class="va">self</span>.data_interim, subfol))
+
+        <span class="cf">for</span> subfol <span class="kw">in</span> [<span class="st">&#39;crop&#39;</span>, <span class="st">&#39;generated&#39;</span>, <span class="st">&#39;rotatecrop&#39;</span>, <span class="st">&#39;raw&#39;</span>]:
+            <span class="bu">setattr</span>(<span class="va">self</span>,
+                    <span class="st">&#39;data_interim_train_&#39;</span> <span class="op">+</span> subfol,
+                    op.join(<span class="va">self</span>.data_interim_train, subfol))
+
+        <span class="cf">for</span> subfol <span class="kw">in</span> [<span class="st">&#39;train&#39;</span>, <span class="st">&#39;val&#39;</span>]:
+            <span class="bu">setattr</span>(<span class="va">self</span>,
+                    <span class="st">&#39;data_interim_train_crop_&#39;</span> <span class="op">+</span> subfol,
+                    op.join(<span class="va">self</span>.data_interim_train_crop, subfol))
+
+        <span class="cf">for</span> subfol <span class="kw">in</span> [<span class="st">&#39;train&#39;</span>, <span class="st">&#39;val&#39;</span>]:
+            <span class="bu">setattr</span>(<span class="va">self</span>,
+                    <span class="st">&#39;data_interim_train_rotatecrop_&#39;</span> <span class="op">+</span> subfol,
+                    op.join(<span class="va">self</span>.data_interim_train_rotatecrop, subfol))
+
+        <span class="co"># level data processed</span>
+        <span class="co"># for subfol in []:</span>
+        <span class="co">#     setattr(self,</span>
+        <span class="co">#             &#39;data_processed_&#39; + subfol,</span>
+        <span class="co">#             op.join(self.data_processed, subfol))</span>
+
+        <span class="co"># level data raw</span>
+        <span class="cf">for</span> subfol <span class="kw">in</span> [<span class="st">&#39;train&#39;</span>, <span class="st">&#39;test&#39;</span>, <span class="st">&#39;test2&#39;</span>]:
+            <span class="bu">setattr</span>(<span class="va">self</span>,
+                    <span class="st">&#39;data_raw_&#39;</span> <span class="op">+</span> subfol,
+                    op.join(<span class="va">self</span>.data_raw, subfol))
+
+    <span class="kw">def</span> make_folder(<span class="va">self</span>):
+        <span class="cf">for</span> directory <span class="kw">in</span> <span class="va">self</span>.values():
+            <span class="cf">if</span> <span class="kw">not</span> op.exists(directory):
+                os.makedirs(directory)</code></pre></div>
+</section><section id="data-abstraction-layer-ii" class="slide level2">
+<h2>Data abstraction layer II</h2>
+<p>Every image had properties saved into json:</p>
+<ul>
+<li>name</li>
+<li>image name</li>
+<li>path to raw</li>
+<li>path to cropped</li>
+<li>fish type</li>
+<li>...</li>
+</ul>
+</section><section id="advantages" class="slide level2">
+<h2>Advantages</h2>
+<ul>
+<li>Stimulates <strong>clear</strong> code file structure</li>
+<li>Speed to get folder structure</li>
+<li>Pythonic, object oriented</li>
+<li>Fast to expand analysis</li>
+</ul>
+</section><section id="the-break-is-over" class="slide level2">
+<h2>The break is over ;)</h2>
 </section></section>
 <section><section id="deep-learning-approach" class="titleslide slide level1"><h1>4. Deep learning approach</h1></section><section id="bounding-box-regression" class="slide level2">
 <h2>Bounding box regression</h2>
@@ -321,8 +407,25 @@ Ax By`</code></pre></div>
 <li>rotation, shift, shear, flip, whitening, etc.</li>
 </ul>
 </section></section>
-<section><section id="elements-of-conclusion" class="titleslide slide level1"><h1>5. Elements of conclusion</h1></section><section class="slide level2">
-
+<section><section id="elements-of-conclusion" class="titleslide slide level1"><h1>5. Elements of conclusion</h1></section><section id="what-we-learned" class="slide level2">
+<h2>What we learned</h2>
+<ul>
+<li>Working together in an efficient manner</li>
+<li>Getting fair results 'easily'</li>
+<li>Kaggle organizer can mess things up quite a bit (stage 1/2)</li>
+<li>How to work with images and machine learning (computer vision &amp; convnet)</li>
+<li>Specificities of the dataset : boat splitting, tiny differences between species...</li>
+</ul>
+</section><section id="what-the-best-contestants-did" class="slide level2">
+<h2>What the best contestants did</h2>
+<ul>
+<li>Massive ensembling</li>
+<li>State-of-the-art object detection (FastRCNN, SSD,...)</li>
+<li>Used pretrained models that are hardly available for newcomers (not implemented in current standard libraries)</li>
+<li>Spent more time</li>
+</ul>
+</section><section id="not-sure-if-it-should-be-kept...-or-how-to-organize" class="slide level2">
+<h2>Not sure if it should be kept... or how to organize</h2>
 <ul>
 <li>Image preprocessing can significantly increase the performance of a classification algorithm.</li>
 <li>A feature descriptor represents a simplified version of an image by extracting useful information and throwing away extraneous information.</li>
