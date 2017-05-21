@@ -241,13 +241,12 @@ Every image had properties saved into json:
 ## Multiple fish per picture
 
 * Only one bounding box per picture,
-* Data augmentation by selecting multiple fishes per pictures
 * No Fish : empty coordinates.
 
 ## Image preprocessing with keras
 
 * Preprocessing with Keras ([ImageDataGenerator](https://keras.io/preprocessing/image/))
-    * Rescale, rotation, shift, shear, flip, whitening, etc.
+    * Rescale `[0:255] -> [0.:1.]` (InceptionV3 graph operates on floating point values)
 
 * Preprocessing generator `flow_from_directory`:
     * Read images form a directory.
@@ -288,7 +287,7 @@ Ax By`
 * Pretrained network determine universal features (curves and edges in its early layers). 
 
 * Pretrained models 
-    * Complex architecture with huge amount of parametres
+    * Complex architecture with huge amount of parameters
     * Trained on large datasets like the ImageNet, with 1.2M labelled images. 
 
 
@@ -298,8 +297,20 @@ Ax By`
  
 ![](images/transfer_learning.png "opt title")
 
+
+## Cropping results
+
+* Objective function: [mean square
+  error](https://en.wikipedia.org/wiki/Mean_squared_error) of the bounding box coordinates
+* Results evaluation:
+    * Qualitatively: 
+    * Quantitatively 
+        * Leaderboard
+        * [Intersection over Union](http://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/)
+
 ## Image augmentation
 
+* Data augmentation by selecting multiple fishes per pictures
 * Rescale `[0:255] -> [0.:1.]` 
     * InceptionV3 graph operates on floating point values
 
