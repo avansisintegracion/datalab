@@ -335,8 +335,8 @@ Ax By`
 
 ![](images/histotrain.jpg){width=50% class=plain}
 
-* Model does not on new boats
-* Only one bounding box photo
+* Model does not predict well on new boats
+* Only one bounding box per photo
 
 ## Classification model
 
@@ -366,7 +366,7 @@ Images|0.4| 1.02 |  2.66 | 0.98|1.3 | 2.65
 
 ## Bonus
 
-* Special metion to clip
+* Special mention to probability distribution clipping:
     * We set a maximum and a minimum certainty 
     * Avoids really hard punishment in case we're wrong
     * Improve our score in public leader board from 1.02 on public leader board to 0.92
@@ -390,11 +390,3 @@ Images|0.4| 1.02 |  2.66 | 0.98|1.3 | 2.65
 - State-of-the-art object detection (FastRCNN, SSD,...)
 - Used pretrained models that are hardly available for newcomers (not implemented in current standard libraries)
 - Spent more time 
-
-## Not sure if it should be kept... or how to organize
-
-- Image preprocessing can significantly increase the performance of a
-  classification algorithm.
-- A feature descriptor represents a simplified version of an image by
-  extracting useful information and throwing away extraneous information.
-- Using feature description increases training speed compared with raw images.
