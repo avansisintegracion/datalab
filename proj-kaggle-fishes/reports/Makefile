@@ -11,7 +11,7 @@ pdf:	clean $(PDFS)
 html:	clean $(HTML)
 
 %.html:	%.md
-	pandoc -t revealjs -s -o $@ --slide-level=2  -V theme=white $< &
+	pandoc -t revealjs -s -o $@ --slide-level=2  -V theme=white -H include-header.html $< &
 
 %.pdf:	%.md
 	pandoc -t beamer -s -V theme=$(THEME) --latex-engine=pdflatex -o $@ $< &

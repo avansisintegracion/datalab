@@ -6,6 +6,7 @@ date: 2017-05-23
 
 ---
 
+
 # 1. The competition and the data
 
 ## <font color="white">Starting point </font> {data-background="https://media.giphy.com/media/WfNIOjdnCh212/giphy.gif?response_id=591d519f2c191af3c3ffbedd"}
@@ -52,12 +53,26 @@ Test stage 2 | 12000
 
 ## Important dates
 
-Stage             | Date
----               | ---
-Competition start | 14 Nov 2016
-We start 🎉       | 13 Jan  2017
-End stage 1       | 6 April 2017
-End stage 2       | 13 April 2017
+<div id="visualization"></div>
+
+<script type="text/javascript">
+  // DOM element where the Timeline will be attached
+  var container = document.getElementById('visualization');
+
+  // Create a DataSet (allows two way data-binding)
+  var items = new vis.DataSet([
+    {id: 1, content: '<span style="color:#97B0F8;"> 14 Nov: </span> Competition start', start: '2016-11-14'},
+    {id: 2, content: '<span style="color:#97B0F8;"> 13 Jan: </span> We start 🎉', start: '2017-01-13'},
+    {id: 3, content: '<span style="color:#97B0F8;"> 06 April: </span> End Stage 1', start: '2017-04-06'},
+    {id: 4, content: '<span style="color:#97B0F8;"> 13 April: </span> End Stage 2', start: '2017-04-13'}
+  ]);
+
+  // Configuration for the Timeline
+  var options = {};
+
+  // Create a Timeline
+  var timeline = new vis.Timeline(container, items, options);
+</script>
 
 # 2. Computer vision based approach
 
@@ -257,21 +272,24 @@ Every image had properties saved into json:
 
 ## Training
 
-* Keras also provides a method to train images by batches (`fit_generator`)
+* Keras also provides a method to train images by **batches** (`fit_generator`)
     * reduce memory utilization.
     * image preprocessing to be done in parallel of training process
-* Requirement: bounding box coordinates and the Fish/NoFish label must be
-   transformed as an iterator.  
-
+    * the input must be transformed into a generator 
 
 ---
 
 ### Train the model by batch
 
-* The generator that feed the training fonction by batch contains:
+* The generator contains:
     * The image generator
     * The bounding box coordinates generator
     * The Fish/NoFish label
+
+```python
+(X_train, y_label)
+([batch_size, img_width, img_height, 3], [[batch_size, 4] [batch_size, 1]])
+```
 
 * itertools: [cylce](https://docs.python.org/2/library/itertools.html#itertools.cycle), [izip](https://docs.python.org/2/library/itertools.html#itertools.izip)
 
@@ -284,7 +302,7 @@ Ax By`
 
 ## Pretrained model
 
-* Pretrained network determine universal features (curves and edges in its early layers). 
+* Pretrained network determine universal features (curves and edges) in its early layers.
 
 * Pretrained models 
     * Complex architecture with huge amount of parameters
@@ -304,22 +322,55 @@ Ax By`
   error](https://en.wikipedia.org/wiki/Mean_squared_error) of the bounding box coordinates
 * Results evaluation:
     * Qualitatively: 
-    * Quantitatively 
-        * Leaderboard
+        * Looking at the results of the photos 
+    * Quantitatively:
+        * Leaderboard results
         * [Intersection over Union](http://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/)
 
-## Image augmentation
+## Some images of the test set
 
-* Data augmentation by selecting multiple fishes per pictures
-* Rescale `[0:255] -> [0.:1.]` 
-    * InceptionV3 graph operates on floating point values
+![](images/fish/out.jpg)
 
-* shear
+## Intersection over union
 
-![shear](images/shear-before.jpeg)
-![shear after](images/shear-after.jpeg)
+![](images/histotrain.jpg){width=50% class=plain}
 
-* rotation, shift, shear, flip, whitening, etc.
+* Model does not on new boats
+* Only one bounding box photo
+
+## Classification model
+
+* Fine tuning using InceptionV3
+* Image augmentation for prediction:
+    * Rescale `[0:255] -> [0.:1.]`
+    * Shear 0.1, zoom, rotation (10), horizontal shift, vertical shift.
+    * Change of seed
+    * Average prediction probabilities
+
+## Classification results
+
+-|-|Random split|-|-|Boat split|-
+---|---|---|--- |--- |---|---
+-|Val |Public| Private| Val|Public| Private
+Images|0.4| 1.02 |  2.66 | 0.98|1.3 | 2.65
+
+## With Boat split
+
+![](images/cmInceptionBoatSplit.svg){width=45% class=plain}
+![](images/pdInceptionBoatSplit.svg){width=45% class=plain}
+
+## Random split
+
+![](images/cmInceptionRandomSplit.svg){width=45% class=plain}
+![](images/pdInceptionRandomSplit.svg){width=45% class=plain}
+
+## Bonus
+
+* Special metion to clip
+    * We set a maximum and a minimum certainty 
+    * Avoids really hard punishment in case we're wrong
+    * Improve our score in public leader board from 1.02 on public leader board to 0.92
+
 
 # 5. Elements of conclusion
 
@@ -338,7 +389,7 @@ Ax By`
 - Massive ensembling
 - State-of-the-art object detection (FastRCNN, SSD,...)
 - Used pretrained models that are hardly available for newcomers (not implemented in current standard libraries)
-- Spent more time
+- Spent more time 
 
 ## Not sure if it should be kept... or how to organize
 
