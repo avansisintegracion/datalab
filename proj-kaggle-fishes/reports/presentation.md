@@ -245,18 +245,20 @@ Every image had properties saved into json:
 
 ## The break is over ;)
 
+![](https://media.giphy.com/media/l0HlLTjPgSsPOrnvW/giphy.gif?response_id=5922fd8beadf08db9caea920)
+
 # 4. Deep learning approach
 
-## Bounding box regression
+## Bounding box regression {data-background="images/some_bb.jpg"}
 
 * Fishes Bounding box coordinates shared on [kaggle forum](https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring/discussion/25902).
 * Done using [Sloth](https://github.com/cvhciKIT/sloth).
 * Coordinates of the bounding box referenced as (`x`, `y`, `width` and `height`).
 
-## Multiple fish per picture
+## Restrictions of our bounding box algorithm
 
-* Only one bounding box per picture,
-* No Fish : empty coordinates.
+* Only one bounding box per picture
+* No Fish : empty coordinates = no crop
 
 ## Image preprocessing with keras
 
@@ -264,15 +266,13 @@ Every image had properties saved into json:
     * Rescale `[0:255] -> [0.:1.]` (InceptionV3 graph operates on floating point values)
 
 * Preprocessing generator `flow_from_directory`:
-    * Read images form a directory.
-    * Assign class for each subdirectory
-    * Generates batches of augmented/normalized data 
-    * Yields batches indefinitely, in an infinite loop.
+    * Read images form a directory and assign class for each subdirectory
+    * Generate batches of augmented/normalized data 
 
 
 ## Training
 
-* Keras also provides a method to train images by **batches** (`fit_generator`)
+* Keras provides a method to train images by **batches** (`fit_generator`)
     * reduce memory utilization.
     * image preprocessing to be done in parallel of training process
     * the input must be transformed into a generator 
@@ -282,13 +282,13 @@ Every image had properties saved into json:
 ### Train the model by batch
 
 * The generator contains:
-    * The image generator
-    * The bounding box coordinates generator
-    * The Fish/NoFish label
+    * image generator
+    * bounding box coordinates generator
+    * Fish/NoFish label
 
 ```python
 (X_train, y_label)
-([batch_size, img_width, img_height, 3], [[batch_size, 4] [batch_size, 1]])
+([batch_size, img_width, img_height, 3], [[batch_size, 4], [batch_size, 1]])
 ```
 
 * itertools: [cylce](https://docs.python.org/2/library/itertools.html#itertools.cycle), [izip](https://docs.python.org/2/library/itertools.html#itertools.izip)
@@ -320,23 +320,22 @@ Ax By`
 
 * Objective function: [mean square
   error](https://en.wikipedia.org/wiki/Mean_squared_error) of the bounding box coordinates
-* Results evaluation:
+* Evaluation:
     * Qualitatively: 
-        * Looking at the results of the photos 
+        * Looking at the images
     * Quantitatively:
         * Leaderboard results
         * [Intersection over Union](http://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/)
 
-## Some images of the test set
+## Some images of the test set {data-background="images/fish/out.jpg"}
 
-![](images/fish/out.jpg)
 
 ## Intersection over union
 
 ![](images/histotrain.jpg){width=50% class=plain}
 
-* Model does not predict well on new boats
-* Only one bounding box per photo
+* Model does not generalize on new boats
+* Restriction of 1 bounding box per image decreases score on image with multiple fishes.
 
 ## Classification model
 
@@ -352,9 +351,11 @@ Ax By`
 -|-|Random split|-|-|Boat split|-
 ---|---|---|--- |--- |---|---
 -|Val |Public| Private| Val|Public| Private
-Images|0.4| 1.02 |  2.66 | 0.98|1.3 | 2.65
+Raw images|0.4| **1.02**⭐️  |  2.66 | 0.98|1.3 | 2.65
+Cropped images| 0.2 |  |   | 0.96| 1.41 | 3.01
 
-## With Boat split
+
+## Boat split 
 
 ![](images/cmInceptionBoatSplit.svg){width=45% class=plain}
 ![](images/pdInceptionBoatSplit.svg){width=45% class=plain}
@@ -364,12 +365,12 @@ Images|0.4| 1.02 |  2.66 | 0.98|1.3 | 2.65
 ![](images/cmInceptionRandomSplit.svg){width=45% class=plain}
 ![](images/pdInceptionRandomSplit.svg){width=45% class=plain}
 
-## Bonus
+## Special mention
 
-* Special mention to probability distribution clipping:
-    * We set a maximum and a minimum certainty 
+* [Clipping](https://www.kaggle.com/sbrugman/tricks-for-the-kaggle-leaderboard) probability distribution:
     * Avoids really hard punishment in case we're wrong
-    * Improve our score in public leader board from 1.02 on public leader board to 0.92
+    * Set a maximum and a minimum certainty for probability
+    * Improve our score in public leader board from 1.02  to 0.92 on public leader board. 
 
 
 # 5. Elements of conclusion
