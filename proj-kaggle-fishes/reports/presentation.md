@@ -327,10 +327,10 @@ Ax By`
         * Leaderboard results
         * [Intersection over Union](http://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/)
 
-## Some images of the test set {data-background="images/fish/out.jpg"}
+## <font color="white">Some images of the test set</font> {data-background="images/fish/out.jpg"}
 
 
-## Intersection over union
+## [Intersection over Union](http://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/)
 
 ![](images/histotrain.jpg){width=50% class=plain}
 
