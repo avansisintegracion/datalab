@@ -1,0 +1,193 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link rel="stylesheet" href="pandoc.css" type="text/css" />
+</head>
+<body>
+<h1 id="article-2">Article 2</h1>
+<p>This post is the second part of our experience in the <a href="https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring">kaggle competition</a>. In our previous post we have described how we start the competition, the computer vision approach that we used, as well as the tools in terms of project management and organization that we used along the competition. During this post, we will present the details about a deep learning approach, the outcome and the conclusions that we obtained in this experience.</p>
+<h1 id="strength-of-deep-learning">Strength of deep learning</h1>
+<p>In order to improve the results of a classification algorithm, we decided to reduce the noise of the pictures using an object detection method.<br />
+We got inspired from similar <a href="https://deepsense.io/deep-learning-right-whale-recognition-kaggle/">previous kaggle competitions</a>, where the purpose was to recognize individual whales. We decided to implement a similar algorithm and obtain the coordinates of the bounding box containing a fish. An schema of the approach is shown in the figure below. We decided to do this by training a CNN model inspired by the <a href="https://github.com/fastai/courses/blob/master/deeplearning1/nbs/lesson7.ipynb">deep learning courses of fast.io</a>. This is a good starting place to learn deep learning and apply it for this competition. Our model was adapted to additionally obtain a classification of the picture to know if it contains a fish or not. Depending if the model predicts a fish in the image, it is crop or not.</p>
+<div class="figure">
+<img src="images/schema.svg" />
+
+</div>
+<h2 id="bounding-box-regression">Bounding box regression</h2>
+<p>A kaggle participant posted in the <a href="https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring/discussion/25902">kaggle forum</a> the coordinates of the bounding box for every fish in the pictures of the train set. This has been made using the labelling software <a href="https://github.com/cvhciKIT/sloth">Sloth</a>. The posted files contain information of the coordinates of the bounding box in terms of the starting point and the size of the box (<code>x</code>, <code>y</code>, <code>width</code> and <code>height</code>). Taking into account that some pictures contain multiple fishes, we tried different approaches like taking only one bounding box per picture, or a combination of the coordinates of the bounding box for each picture to include the maximum number of fishes inside the picture but the results were very similar. For instance in the following snippet, we read the different annotations for each class and each picture and then we take the coordinates for the bigger fish in the <code>height</code> and <code>width</code>.</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python">anno_classes <span class="op">=</span> glob.glob(op.join(<span class="va">self</span>.f.data_external_annos, <span class="st">&#39;*.json&#39;</span>))
+bb_json <span class="op">=</span> {}
+<span class="cf">for</span> fish_class <span class="kw">in</span> anno_classes:
+    fish_bb_json <span class="op">=</span> json.load(<span class="bu">open</span>(op.join(fish_class), <span class="st">&#39;r&#39;</span>))
+    <span class="cf">for</span> fish_annotation <span class="kw">in</span> fish_bb_json:
+        <span class="cf">if</span> <span class="bu">len</span>(fish_annotation[<span class="st">&#39;annotations&#39;</span>]) <span class="op">&gt;</span> <span class="dv">0</span>:
+        bb_json[fish_annotation[<span class="st">&#39;filename&#39;</span>].split(<span class="st">&#39;/&#39;</span>)[<span class="op">-</span><span class="dv">1</span>]] <span class="op">=</span> <span class="bu">sorted</span>(
+            fish_annotation[<span class="st">&#39;annotations&#39;</span>], key<span class="op">=</span><span class="kw">lambda</span> x:
+            x[<span class="st">&#39;height&#39;</span>]<span class="op">*</span>x[<span class="st">&#39;width&#39;</span>])[<span class="op">-</span><span class="dv">1</span>]</code></pre></div>
+<p>The pictures that does not contain bounding boxes are filled with empty box coordinates.</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="co"># Get python raw filenames</span>
+raw_filenames <span class="op">=</span> [f.split(<span class="st">&#39;/&#39;</span>)[<span class="op">-</span><span class="dv">1</span>] <span class="cf">for</span> f <span class="kw">in</span> filenames]
+
+<span class="co"># Image that have no annotation, empty bounding box</span>
+empty_bbox <span class="op">=</span> {<span class="st">&#39;x_0&#39;</span>: <span class="dv">0</span>., <span class="st">&#39;y_0&#39;</span>: <span class="dv">0</span>., <span class="st">&#39;x_1&#39;</span>: <span class="dv">0</span>., <span class="st">&#39;y_1&#39;</span>: <span class="dv">0</span>.}
+
+<span class="cf">for</span> f <span class="kw">in</span> raw_filenames:
+<span class="cf">if</span> <span class="kw">not</span> f <span class="kw">in</span> bb_json.keys(): bb_json[f] <span class="op">=</span> empty_bbox</code></pre></div>
+<p>Keras provides a function <a href="https://keras.io/preprocessing/image/">ImageDataGenerator</a> which can be used as a preprocessing tool to modify or normalize the pictures with predefined treatment like rescale, rotation, shift, shear, flip, whitening, etc. The preprocessing generator can read the images directly from a directory path using the function <code>flow_from_directory</code>. The result is an iterator with generates images in batches in an infinite loop.</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="co"># Image preprocessing generator</span>
+train_datagen <span class="op">=</span> image.ImageDataGenerator(rescale<span class="op">=</span><span class="dv">1</span>.<span class="op">/</span><span class="dv">255</span>,)
+
+trn_generator <span class="op">=</span> train_datagen.flow_from_directory(
+        PATH <span class="op">+</span> <span class="st">&#39;train&#39;</span>,
+        target_size<span class="op">=</span>(img_height, img_width),
+        batch_size<span class="op">=</span>batch_size,
+        shuffle<span class="op">=</span><span class="va">False</span>,
+        class_mode<span class="op">=</span><span class="va">None</span>,
+        seed<span class="op">=</span>seed)</code></pre></div>
+<p>Keras also provides a method to train images by batches using a generator. This reduces memory utilization which is particularly useful when training with a GPU with low memory. In addition, it optimize CPU utilization because image preprocessing is done in parallel of training process. For our case, in order to use Keras <code>fit_generator</code> function, the bounding box coordinates and the Fish/NoFish label must be transformed to an iterator. We used the <a href="https://docs.python.org/2/library/itertools.html"><code>itertool</code></a> library provides useful functions to concatenate iterators and also to make an iterator cyclic. As a result, the iterator used to feed the training function contains the concatenation of the image generator, the bounding box coordinates generator and the Fish/NoFish label generator. This iterator is called <code>train_generator</code> and send batches of values to the <code>fit_generator</code> function. This block has been done as follows:</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python"><span class="co"># Boundary boxes dict to np.array </span>
+trn_bbox <span class="op">=</span> np.stack([convert_bb(bb_json[f], s) <span class="cf">for</span> f, s <span class="kw">in</span>
+                     <span class="bu">zip</span>(raw_filenames, sizes)],).astype(np.float32)
+<span class="co">#=&gt; [[&#39;x_0&#39;, &#39;y_0&#39;, &#39;x_1&#39;, &#39;x_0&#39;], [&#39;x_0&#39;, &#39;y_0&#39;, &#39;x_1&#39;, &#39;x_0&#39;],...]</span>
+
+<span class="co"># Fish = 1, NoFish = 0,  (NoFish category label == 4)</span>
+trn_fish_labels <span class="op">=</span> np.asarray([ <span class="dv">0</span> <span class="cf">if</span> ( fish <span class="op">==</span> <span class="dv">4</span> ) <span class="cf">else</span> <span class="dv">1</span> <span class="cf">for</span> fish <span class="kw">in</span> trn_generator.classes ])
+<span class="co">#=&gt; [[1], [1], [0],...]</span>
+
+<span class="co"># Transform np arrays to iteratior</span>
+<span class="kw">def</span> batch(iterable1, iterable2, n<span class="op">=</span><span class="dv">1</span>):
+    l1 <span class="op">=</span> <span class="bu">len</span>(iterable1)
+    l2 <span class="op">=</span> <span class="bu">len</span>(iterable2)
+    <span class="cf">for</span> ndx <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">0</span>, l2, n):
+        <span class="cf">yield</span> [iterable1[ndx:<span class="bu">min</span>(ndx <span class="op">+</span> n, l1)], iterable2[ndx:<span class="bu">min</span>(ndx <span class="op">+</span> n, l2)]]
+
+trn_bbox_generator <span class="op">=</span> (n <span class="cf">for</span> n <span class="kw">in</span> itertools.cycle(batch(trn_bbox, trn_fish_labels,
+                                                       n<span class="op">=</span>batch_size)))
+<span class="co"># Concatenation of image and labels iterator</span>
+train_generator <span class="op">=</span> itertools.izip(trn_generator, trn_bbox_generator)</code></pre></div>
+<h2 id="fine-tuned-model">Fine tuned model</h2>
+<p>We fine-tuned a convent model using the <a href="http:/://arxiv.org/abs/1512.00567">InceptionV3</a> pretrained architecture. Fine-tuning a model consists to replace last layer it with a new softmax layer with the number of class wanted to use for the classification problem. The advantages of using a pretrained network is that it can determine universal features like curves and edges in its early layers, which is relevant for most of the classification problems. These pretrained models are composed by complex architecture with huge amount of parameters, trained on large datasets like the <a href="http://www.image-net.org/challenges/LSVRC/">ImageNet</a>, with 1.2M labelled images. Fine-tuning is a common practice for classification problems that are related with the previous application of the model in the <a href="http://www.image-net.org/challenges/LSVRC/">ImageNet</a> competition.</p>
+<p>For our case, the last layer of the model is <strong>fine tuned</strong> to obtain a fish and no fish classification <code>x_fish</code> and also the coordinates of the identified fish <code>x_fish</code>. <a href="http://https://github.com/fchollet/keras">Keras</a> contains deep learning models alongside with the pretrained with pre-trained weights such as <a href="https://arxiv.org/abs/1611.05431">ResNet50</a>, <a href="http://www.robots.ox.ac.uk/~vgg/research/very_deep/">VGG16</a> and <a href="http:/://arxiv.org/abs/1512.00567">InceptionV3</a>. In the snipped below, we load InceptionV3 model with the pre-trained weights on <a href="http://www.image-net.org/challenges/LSVRC/">ImageNet</a>. Inception V3 has been trained with <code>299x299x3</code> images, which is the default parameter but it is possible to modify the size with the parameter <code>input_shape</code>. The fine-tuning is done by removing the top layers (AveragePooling2D, Flatten and Dense) and replacing them by dense layers with the size of the desired classification. The parameters of the top layers replaced remains the same as the initial inception model. Like the <a href="http://cs231n.github.io/convolutional-networks/">Standfor Convolutional Neural networks document</a> says:</p>
+<blockquote>
+<p>&quot;don’t be a hero&quot;: Instead of rolling your own architecture for a problem, you should look at whatever architecture currently works best on ImageNet</p>
+</blockquote>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python">base_model <span class="op">=</span> InceptionV3(include_top<span class="op">=</span><span class="va">False</span>, weights<span class="op">=</span><span class="st">&#39;imagenet&#39;</span>,
+                         input_tensor<span class="op">=</span><span class="va">None</span>, input_shape<span class="op">=</span>(img_height, img_width, <span class="dv">3</span>))
+output <span class="op">=</span> base_model.get_layer(index<span class="op">=-</span><span class="dv">1</span>).output  <span class="co"># Shape: (8, 8, 2048)</span>
+output <span class="op">=</span> AveragePooling2D((<span class="dv">8</span>, <span class="dv">8</span>), strides<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">8</span>),
+                          name<span class="op">=</span><span class="st">&#39;avg_pool&#39;</span>)(output)
+output <span class="op">=</span> Flatten(name<span class="op">=</span><span class="st">&#39;flatten&#39;</span>)(output)
+x_bb <span class="op">=</span> Dense(<span class="dv">4</span>, name<span class="op">=</span><span class="st">&#39;bb&#39;</span>)(output)
+x_fish <span class="op">=</span> Dense(<span class="dv">1</span>, activation<span class="op">=</span><span class="st">&#39;sigmoid&#39;</span>, name<span class="op">=</span><span class="st">&#39;fish&#39;</span>)(output)
+model <span class="op">=</span> Model(base_model.<span class="bu">input</span>, [x_bb, x_fish])</code></pre></div>
+<p>The loss function used to train the model is a <a href="https://en.wikipedia.org/wiki/Mean_squared_error">mean square error</a> in case of the bounding box regression and <code>binary crossentropy</code> for the fish/nofish classification. We use the <a href="https://keras.io/optimizers/#sgd">stochastic gradient descent optimizer</a> to train our model and an initialization using momentum and a <a href="http://www.cs.toronto.edu/~fritz/absps/momentum.pdf">nesterov scheme</a> to accelerate convergence. Finaly, we train the model using the <code>train_generator</code> which delivers the images, the bounding box and the fish labels by batches. The batch size depends on the memory of the GPU, the size of the image and the size of the neural network used to train the model. For example using <code>InceptionV3</code>, image size of <code>640x360</code> and a <a href="http://www.geforce.com/hardware/desktop-gpus/geforce-gtx-titan/specifications">GPU Titan</a> with 6Gb, the batch size can be 16. We separate the train set in two to obtain a validation set, we create a generator to obtain the validation images, bounding box and fish labels by batches the same way as we did for <code>train_generator</code>.</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python">optimizer <span class="op">=</span> SGD(lr<span class="op">=</span>learning_rate, momentum<span class="op">=</span><span class="fl">0.9</span>, decay<span class="op">=</span><span class="fl">0.0</span>,
+                nesterov<span class="op">=</span><span class="va">True</span>)
+model.<span class="bu">compile</span>(loss<span class="op">=</span>[<span class="st">&#39;mse&#39;</span>, <span class="st">&#39;binary_crossentropy&#39;</span>],
+              optimizer<span class="op">=</span>optimizer, metrics<span class="op">=</span>[<span class="st">&#39;accuracy&#39;</span>],
+              loss_weights<span class="op">=</span>[<span class="fl">0.001</span>, <span class="dv">1</span>.])
+
+<span class="co"># Train model</span>
+model.fit_generator(train_generator,
+                    samples_per_epoch<span class="op">=</span>nbr_train_samples,
+                    nb_epoch<span class="op">=</span>nbr_epoch,
+                    validation_data<span class="op">=</span>validation_generator,
+                    nb_val_samples<span class="op">=</span>nbr_val_samples,
+                    callbacks<span class="op">=</span>callbacks_list)</code></pre></div>
+<p>We obtained better results with the inception network proposed from the keras function. Inception network is built from convolutional building blocks. This architecture is especially useful in the context of localization and object detection. There has been different version of Inception <code>v1</code>, <code>v2</code>, <code>v3</code>. The version <code>Inception v3</code> is a variant of the <a href="https://arxiv.org/pdf/1409.4842v1.pdf">GoogleNet network</a> with the implementation of <em>batch normalization</em>. This refers to an additional normalization of the fully connected layer of the auxiliary classifier and not only the convolution blocks.</p>
+<h2 id="cropping-results">Cropping results</h2>
+<p>The model is trained to decrease the absolute distance between the predicted coordinates and the existing ones, but a more common metric to measure object detection techniques is the <a href="http://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/">intersection over union</a>. Basically it is the ratio of the common and the total area of the predicted and the ground truth bounding box. The obtained results that are not completely satisfactory because the predicted bounding boxes does not intersect always the bounding box used for validation. This occurs because some pictures contains several fishes, then the model hardly generalize to predict the bounding box used for validation. In addition, we must keep in mind that the pictures of the test set are really different from the pictures of the train set because it contains completely different boats, so it complicates the regression task.</p>
+<div class="figure">
+<img src="images/histotrain.jpg" />
+
+</div>
+<h1 id="using-neural-networks-to-make-fish-classification">Using neural networks to make fish classification</h1>
+<p>Similar to the regression model used to obtain the coordinates of the bounding box, the classification can be obtained by fine tuning the last layer of the pretrained model to obtain the classification of the fish. The only thing that changes is the last layer <code>x_class</code> with 8 different outputs:</p>
+<div class="sourceCode"><pre class="sourceCode python"><code class="sourceCode python">base_model <span class="op">=</span> InceptionV3(include_top<span class="op">=</span><span class="va">False</span>, weights<span class="op">=</span><span class="st">&#39;imagenet&#39;</span>,
+                         input_tensor<span class="op">=</span><span class="va">None</span>, input_shape<span class="op">=</span>(img_height, img_width, <span class="dv">3</span>))
+output <span class="op">=</span> base_model.get_layer(index<span class="op">=-</span><span class="dv">1</span>).output  <span class="co"># Shape: (8, 8, 2048)</span>
+output <span class="op">=</span> AveragePooling2D((<span class="dv">8</span>, <span class="dv">8</span>), strides<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">8</span>),
+                          name<span class="op">=</span><span class="st">&#39;avg_pool&#39;</span>)(output)
+output <span class="op">=</span> Flatten(name<span class="op">=</span><span class="st">&#39;flatten&#39;</span>)(output)
+x_class <span class="op">=</span> Dense(<span class="dv">8</span>, name<span class="op">=</span><span class="st">&#39;class&#39;</span>)(output)
+model <span class="op">=</span> Model(base_model.<span class="bu">input</span>, x_class)</code></pre></div>
+<p>The results are highly affected by the way we split the train set, as we seen in the <a href="REF">article 1</a>. Using a random split we obtain a validation log loss of 0.4 and 1.02 for the submission test in the public leader board. This shows that the model overfits over the training set. Using a split with different boats in the train and validation set, we obtain a log loss of 0.98 and 1.3 in the public leader board. This split allows us to obtain an estimation of what would be the score on the public leader board without making a submission on the kaggle platform. However, the predictions of this model in the public leader board are worse than the one used a random split because the trained model see less boats than the random split.</p>
+<ul>
+<li><pre><code>       | -   | Random split | -       | -    | Boat split | -</code></pre>
+--- | --- | --- | --- | --- | --- | ---</li>
+<li><pre><code>       | Val | Public       | Private | Val  | Public     | Private</code></pre>
+Raw images | 0.4 | <strong>1.02</strong>⭐️ | 2.66 | 0.98 | 1.3 | 2.65 Cropped images | 0.2 | - | - | 0.96 | 1.41 | 3.01</li>
+</ul>
+<h2 id="different-boat-split">Different boat split</h2>
+<p>The log loss and the accuracy obtained while training the model is not enough to evaluate the performance of the model, specially in a multi categorical and unbalanced problem like this. This is why we use <a href="https://en.wikipedia.org/wiki/Confusion_matrix">confusion matrix</a> to see the number of right and wrong predicted photos for each class. As shown below, we can see that the model does not predict correctly the non representative classes like the big eyed tuna (BET), the moonfish (LAG) or the other class.</p>
+<div class="figure">
+<img src="images/cmInceptionBoatSplit.svg" />
+
+</div>
+<p>In addition we calculate the probability distribution for each class to see if the model is confident of the predictions that it made for each class. The model is more confident for the predictions of the albacore (ALB), yellow fish tuna (YFT) and a few sharks (SHK).</p>
+<div class="figure">
+<img src="images/pdInceptionBoatSplit.svg" />
+
+</div>
+<h2 id="random-split">Random split</h2>
+<p>Using a random split the model see more boat pictures but since some pictures of each boat are very similar (video sequences) the validation log loss becomes very optimistic because it validates with photos very similar to the ones seen during the training. In consequence, the predictions seems very accurate as show in the following confusion matrix.</p>
+<div class="figure">
+<img src="images/cmInceptionRandomSplit.svg" />
+
+</div>
+<p>In addition the model is more confident of the predictions made. As can be seen for classes like shark (SHK),</p>
+<div class="figure">
+<img src="images/pdInceptionRandomSplit.svg" />
+
+</div>
+<h1 id="conclusion-perspective">Conclusion &amp; perspective</h1>
+<p>During a personal point of view, during this competition we learned how to work efficiently as a team for Data sience project. We used organizational tools like <a href="http://drivendata.github.io/cookiecutter-data-science/">cookiecutter</a> and other tools such as a <a href="http://docs.python-guide.org/en/latest/dev/virtualenvs/">python virtual environement</a> to keep trace of the used packages.</p>
+<p>We tasted the two main approaches for image classification, such as traditional computer vision and deep learning approaches. Even if the deep learning approach seems to be conquest the image classificaiton problems, the traditional computer vision approaches are also a robust and good generalization alternative.</p>
+<ul>
+<li>Specificities of the dataset : boat splitting, tiny differences between species...</li>
+<li>Clipping to reduce the penalization from log loss score</li>
+</ul>
+</body>
+</html>

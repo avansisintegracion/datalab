@@ -2,45 +2,47 @@
 
 This post is the second part of our experience in the [kaggle
 competition](https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring).
-In our previous post we have described how we start the competition, our first
-approaches, the difficulties of the competition, the tools that we used in
-terms of project management and organization and some of the main approaches
-that you can take into account for a image classification project.  During this
-post, we will present the final approaches that we used in the competitions,
-the outcomes and the conclusions that we obtained in this experience.
-
-# A more complete bag of features approach
-
-Like many, we noticed that whatever feature detection technique you use, many detection points are for the boat or more globally for the environment that we want to get rid of. In order to limit this issue, we tried to generate a mask to remove large elements such as pieces of boats that are present in the full sized images. The goal for the mask was to remove background elements from the image such as large elements of the boats that are rather squarish and have homogeneous colors and then perform keypoint detection using ORB (very similar results to SURF, that we finally used). We further fine-tuned the idea by adding some gaussian blur and color segmentation to smoothen the shapes as you can see below : 
-
-As you can see on the images, it does enable us to remove regions for keypoint detection that surround the fishes, such as the floor or the elements in the top-middle region. This is just one example that is not in the dataset (see NDA), but on the images of the dataset, by playing with the number of colours and size of the elements we were actually able to remove quite a lot of non interesting features. At the same time, you can notice that some of the major elements are also lost such as the fins. They are extremely important in fish classification as their positions, proportions to each other and colours are key to fish species definition as previously discussed.
-
-The Kernix Lab has been successful by using [XGBoost](https://xgboost.readthedocs.io/en/latest/) library for classifications problems, which is a popular gradient boosted machine. So we went on to replace random forest by an optimized xgboost classifier and here are the results we had at the end of the competition :
-
-```python
-SVG(filename='images/scores_xgboost.svg')
-```
-
-![svg](./images/output_28_0.svg)
-
-
-Logloss score keep rising from validation dataset to the private one when we used random splitting, showing that it was a final poor choice as the private dataset contained many unseen boats so far. Training with a boat-aware splitting, allowed us to have a much more consistent results between the datasets. Even if the results in terms of rank on the leaderboard were not great with this approach, it showed us that this kind of model, even if less accurate than state-of-the-art classifier, they generalize well compared to many and gives consistent results.
-
+In our previous post we have described how we start the competition, the
+computer vision approach that we used, as well as the tools in
+terms of project management and organization that we used along the competition.
+During this post, we will present the details about a deep learning approach,
+the outcome and the conclusions that we obtained in this experience.
 
 # Strength of deep learning
+
+In order to improve the results of a classification algorithm, we decided to
+reduce the noise of the pictures using an object detection method.  
+We got inspired from similar [previous kaggle
+competitions](https://deepsense.io/deep-learning-right-whale-recognition-kaggle/),
+where the purpose was to recognize individual whales.
+We decided to implement a similar algorithm and obtain the coordinates of
+the bounding box containing a fish. 
+An schema of the approach is shown in the figure below.
+We decided to do this by training a CNN model inspired by the [deep learning
+courses of
+fast.io](https://github.com/fastai/courses/blob/master/deeplearning1/nbs/lesson7.ipynb).
+This is a good starting place to learn deep learning and apply it for this competition.
+Our model was adapted to additionally obtain a classification of the picture to know if it contains a fish or not. 
+Depending if the model predicts a fish in the image, it is crop or not.
+
+![](images/schema.svg)
 
 ## Bounding box regression
 
 A kaggle participant posted in the [kaggle
-forum](https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring/discussion/25902) the coordinates of the bounding box for every fish in the pictures of the train set. This has been made 
-using the labelling software [Sloth](https://github.com/cvhciKIT/sloth). The posted files contain
-information of the coordinates of the bounding box in terms of the starting point and the size of the box (`x`, `y`, `width` and `height`).
-Taking into account that some pictures contain multiple fishes, we tried
-different approaches like taking only one bounding box per picture, or a
-combination of the coordinates of the bounding box for each picture to include
-the maximum number of fishes inside the picture. For instance in the following
-snippet, we read the different annotations for each class and each picture and
-then we take the coordinates for the bigger fish in the `height` and `width`. 
+forum](https://www.kaggle.com/c/the-nature-conservancy-fisheries-monitoring/discussion/25902)
+the coordinates of the bounding box for every fish in the pictures of the train
+set. This has been made using the labelling software
+[Sloth](https://github.com/cvhciKIT/sloth). The posted files contain
+information of the coordinates of the bounding box in terms of the starting
+point and the size of the box (`x`, `y`, `width` and `height`).  Taking into
+account that some pictures contain multiple fishes, we tried different
+approaches like taking only one bounding box per picture, or a combination of
+the coordinates of the bounding box for each picture to include the maximum
+number of fishes inside the picture but the results were very similar. For
+instance in the following snippet, we read the different annotations for each
+class and each picture and then we take the coordinates for the bigger fish in
+the `height` and `width`. 
 
 ```python
 anno_classes = glob.glob(op.join(self.f.data_external_annos, '*.json'))
@@ -72,8 +74,8 @@ Keras provides a function
 as a preprocessing tool to modify or normalize the pictures with predefined
 treatment like rescale, rotation, shift, shear, flip, whitening, etc. The
 preprocessing generator can read the images directly from a directory path
-using the function `flow_from_directory`. The result can be used as an iterator
-with and infinite loop that generates images in batches. 
+using the function `flow_from_directory`. The result is an iterator with
+generates images in batches in an  infinite loop.
 
 ```python
 # Image preprocessing generator
@@ -88,14 +90,23 @@ trn_generator = train_datagen.flow_from_directory(
         seed=seed)
 ```
 
-Keras also provides a method to train images by batches to reduce memory utilization
-which is particularly useful when training with GPU with low memory. This also
-makes image preprocessing to be done in parallel of training process, which
-optimize CPU utilization.  In order to use Keras `fit_generator` function, the bounding
-box coordinates and the Fish/NoFish label must be transformed also as an
-iterator. The iterator used to feed the training function contains the concatenation of the image generator, the bounding box
-coordinates generator and the Fish/NoFish label. this iterator is called `train_generator` 
-and send batches of values to the `fit_generator` fonction.
+Keras also provides a method to train images by batches using a generator. This
+reduces memory utilization which is particularly useful when training with a
+GPU with low memory. 
+In addition, it optimize CPU utilization because image preprocessing is done in
+parallel of training process.
+For our case, in order to use Keras `fit_generator` function, the bounding
+box coordinates and the Fish/NoFish label must be transformed to an
+iterator. 
+We used the [`itertool`](https://docs.python.org/2/library/itertools.html)
+library provides useful functions to concatenate iterators and also to make an
+iterator cyclic.
+As a result, the iterator used to feed the training function contains the concatenation of
+the image generator, the bounding box
+coordinates generator and the Fish/NoFish label generator. 
+This iterator is called `train_generator` and send batches of values to the
+`fit_generator` function.
+This block has been done as follows:
 
 
 ```python
@@ -121,21 +132,38 @@ trn_bbox_generator = (n for n in itertools.cycle(batch(trn_bbox, trn_fish_labels
 train_generator = itertools.izip(trn_generator, trn_bbox_generator)
 ```
 
-## Fine tunned model
+## Fine tuned model
 
-We fine-tuned a convent model with different pretrained architectures like [VGG16](http://www.robots.ox.ac.uk/~vgg/research/very_deep/), [InceptionV3](http:/://arxiv.org/abs/1512.00567), [ResNet50](https://arxiv.org/abs/1611.05431).
-
-A pretrained network can determine universal features like curves and edges in
-its early layers, those are relevant and useful to most of the classification
-problems.
+We fine-tuned a convent model using the
+[InceptionV3](http:/://arxiv.org/abs/1512.00567) pretrained architecture.
+Fine-tuning a model consists to replace last layer it with a new softmax layer
+with the number of class wanted to use for the classification problem.  The
+advantages of using a pretrained network is that it can determine universal
+features like curves and edges in its early layers, which is relevant for most
+of the classification problems.
 These pretrained models are composed by complex architecture with huge amount
-of parametres, trained on large datasets like the [ImageNet](http://www.image-net.org/challenges/LSVRC/), with 1.2M labelled images. 
-The most common practice is to truncate the last layer of the pretrained
-network and replace it with a new softmax layer with the number of class
-desirable for the new problem.
+of parameters, trained on large datasets like the [ImageNet](http://www.image-net.org/challenges/LSVRC/), with 1.2M labelled images. 
+Fine-tuning is a common practice for classification problems that are related
+with the previous application of the model in the
+[ImageNet](http://www.image-net.org/challenges/LSVRC/) competition.
 
-The last layer of the model is **fine tuned** to obtain a fish and no fish classification `x_fish` and also the coordinates of the identified fish `x_fish`. 
-[Keras](http://https://github.com/fchollet/keras) contains deep learning models alongside with the pretrained with pre-trained weights. In the snipped below, we load InceptionV3 model with the pre-trainedweights on [ImageNet](http://www.image-net.org/challenges/LSVRC/). Inception V3 has been trained with `299x299x3` images, which is the default parameter but it is posible to modify the size with the parameter `input_shape`. The fine tunning is done removing the top layers (AveragePooling2D, Flatten and Dense) and replacing them by dense layers with the size of the desired classification. The parameters of the top layers replaced remains the same as the initial inception model. Like the [Standfor Convolutional Neural networks document](http://cs231n.github.io/convolutional-networks/) says:
+
+For our case, the last layer of the model is **fine tuned** to obtain a fish
+and no fish classification `x_fish` and also the coordinates of the identified
+fish `x_fish`.  [Keras](http://https://github.com/fchollet/keras) contains deep
+learning models alongside with the pretrained with pre-trained weights such as
+[ResNet50](https://arxiv.org/abs/1611.05431),
+[VGG16](http://www.robots.ox.ac.uk/~vgg/research/very_deep/) and
+[InceptionV3](http:/://arxiv.org/abs/1512.00567).  In the snipped below, we
+load InceptionV3 model with the pre-trained weights on
+[ImageNet](http://www.image-net.org/challenges/LSVRC/). Inception V3 has been
+trained with `299x299x3` images, which is the default parameter but it is
+possible to modify the size with the parameter `input_shape`. The fine-tuning
+is done by removing the top layers (AveragePooling2D, Flatten and Dense) and
+replacing them by dense layers with the size of the desired classification. The
+parameters of the top layers replaced remains the same as the initial inception
+model. Like the [Standfor Convolutional Neural networks
+document](http://cs231n.github.io/convolutional-networks/) says:
 
 >  "don’t be a hero": Instead of rolling your own architecture for a problem, you should look at whatever architecture currently works best on ImageNet
 
@@ -193,8 +221,6 @@ architecture is especially useful in the context of localization and object
 detection.
 There has been different version of Inception `v1`, `v2`, `v3`. The version `Inception v3` is a variant of the [GoogleNet network](https://arxiv.org/pdf/1409.4842v1.pdf) with the implementation of _batch normalization_. This refers to an additional normalization of the fully connected layer of the auxiliary classifier and not only the convolution blocks. 
 
---- 
-
 ## Cropping results
 
 The model is trained to decrease the absolute distance between the
@@ -202,19 +228,21 @@ predicted coordinates and the existing ones, but a more common metric to measure
 object detection techniques is the [intersection over
 union](http://www.pyimagesearch.com/2016/11/07/intersection-over-union-iou-for-object-detection/).
 Basically it is the ratio of the common and the total area of the predicted and the ground truth bounding box.
-The obtained results are not satisfactory because the predicted bounding boxes
-does not intersect the bounding box used for validation. This occurs because
+The obtained results that are not completely satisfactory because the predicted bounding boxes
+does not intersect always the bounding box used for validation. This occurs because
 some pictures contains several fishes, then the model hardly generalize to
-select the biggest fish in the picture. 
-In addition it does not provide a good generalization because of the great
-difference of the pictures of the train and test set.
+predict the bounding box used for validation. 
+In addition, we must keep in mind that the pictures of the test set are really
+different from the pictures of the train set because it contains completely
+different boats, so it complicates the regression task.
 
 ![](images/histotrain.jpg)
+
 
 # Using neural networks to make fish classification
 
 Similar to the regression model used to obtain the coordinates of the bounding
-box, the classification can be obtained by doing fine tuning the last layer of
+box, the classification can be obtained by fine tuning the last layer of
 the pretrained model to obtain the classification of the fish. 
 The only thing that changes is the last layer `x_class` with 8 different outputs:
 
@@ -235,27 +263,44 @@ of 0.4 and 1.02 for the submission test in the public leader board.
 This shows that the model overfits over the training set.
 Using a split with different boats in the train and validation set, we obtain a
 log loss of 0.98 and 1.3 in the public leader board. 
-This split allows us to obtain an estimation of what would be the score on the public leader board without making a submission on the kaggle platform. However, the predictions of this model in the public leader board are worse than the one used a random split because the trained model see less boats than the random split.
+This split allows us to obtain an estimation of what would be the score on the
+public leader board without making a submission on the kaggle platform.
+However, the predictions of this model in the public leader board are worse
+than the one used a random split because the trained model see less boats than
+the random split.
 
--|Random split|-|-|Boat split|-
----|---|--- |--- |---|---
-Validation|Public leaderboard | Private leaderboard| Validation|Public leaderboard | Private leaderboard
-0.4| 1.02 |  2.66 | 0.98|1.3 | 2.65
+-              | -   | Random split | -       | -    | Boat split | -
+---            | --- | ---          | ---     | ---  | ---        | ---
+-              | Val | Public       | Private | Val  | Public     | Private
+Raw images     | 0.4 | **1.02**⭐️   | 2.66    | 0.98 | 1.3        | 2.65
+Cropped images | 0.2 | -            | -       | 0.96 | 1.41       | 3.01
 
-**Different boat split** 
+## Different boat split
 
-The log loss and the accuracy obtained while training the model is not enough to evaluate the performance of the model, specially in a multi categorical and unbalanced problem like this. This is why we use [confusion matrix](https://en.wikipedia.org/wiki/Confusion_matrix) to see the number of right and wrong predicted photos for each class. As shown below, we can see that the model does not predict correctly the non representative classes like the big eyed tuna (BET), the moonfish (LAG) or the other class. 
+The log loss and the accuracy obtained while training the model is not enough
+to evaluate the performance of the model, specially in a multi categorical and
+unbalanced problem like this. This is why we use [confusion
+matrix](https://en.wikipedia.org/wiki/Confusion_matrix) to see the number of
+right and wrong predicted photos for each class. As shown below, we can see
+that the model does not predict correctly the non representative classes like
+the big eyed tuna (BET), the moonfish (LAG) or the other class. 
 
 ![](images/cmInceptionBoatSplit.svg)
 
-In addition we calculate the probability distribution for each class to see if the model is confident of the predictions that it made for each class. The model is more confident for the predictions of the albacore (ALB), yellow fish tuna (YFT) and a few sharks (SHK).
+In addition we calculate the probability distribution for each class to see if
+the model is confident of the predictions that it made for each class. The
+model is more confident for the predictions of the albacore (ALB), yellow fish
+tuna (YFT) and a few sharks (SHK).
 
 ![](images/pdInceptionBoatSplit.svg)
 
-**Random split**
+## Random split
 
-Using a random split the model see more boat pictures but since some pictures of each boat are very similar (video sequences) the validation log loss becomes very optimistic because it validates with photos very similar to the ones seen during the training.
-In consequence, the predictions seems very accurate as show in the following confusion matrix.
+Using a random split the model see more boat pictures but since some pictures
+of each boat are very similar (video sequences) the validation log loss becomes
+very optimistic because it validates with photos very similar to the ones seen
+during the training.  In consequence, the predictions seems very accurate as
+show in the following confusion matrix.
 
 ![](images/cmInceptionRandomSplit.svg)
 
@@ -266,6 +311,19 @@ In addition the model is more confident of the predictions made. As can be seen 
 
 # Conclusion & perspective
 
+During a personal point of view, during  this competition we learned how to
+work efficiently as a team for Data sience project. We used organizational
+tools like
+[cookiecutter](http://drivendata.github.io/cookiecutter-data-science/) and
+other tools such as a [python virtual
+environement](http://docs.python-guide.org/en/latest/dev/virtualenvs/) to keep
+trace of the used packages.
 
+We tasted the two main approaches for image classification, such as traditional
+computer vision and deep learning approaches.
+Even if the deep learning approach seems to be conquest the image
+classificaiton problems, the traditional computer vision approaches are also a
+robust and good generalization alternative.
+
+- Specificities of the dataset : boat splitting, tiny differences between species...
 - Clipping to reduce the penalization from log loss score
-- Winning solution include state of the art algorithms like [SSD](https://github.com/rykov8/ssd_keras)
