@@ -1,4 +1,12 @@
+# encoding=utf8
+import sys
+reload(sys)
+sys.setdefaultencoding('utf8')
+
 import os
+import pandas as pd
+import numpy as np
+import requests
 from slackclient import SlackClient
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
 import pyowm
@@ -65,3 +73,14 @@ def parse_entities(command):
         response = "There are no entities in the phrase"
     print(response)
     return response
+
+def available_velibs(command):
+    response = requests.get("http://opendata.paris.fr/api/records/1.0/download/?dataset=stations-velib-disponibilites-en-temps-reel&facet=banking&facet=bonus&facet=status&facet=contract_name&rows=-1")
+    txt = response.text
+    f = open('velib.csv', 'w+')
+    f.write(txt)
+    velibs = pd.read_csv('velib.csv', sep=";")
+    velibs = velibs[velibs.status == 'OPEN']
+    subdf = velibs[velibs['name'].str.contains(command.upper())]
+    resp = np.array_str(subdf[["name","address","available_bikes"]].values)
+    return resp

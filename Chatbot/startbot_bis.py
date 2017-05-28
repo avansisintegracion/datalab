@@ -58,11 +58,15 @@ def parse_slack_output(output_list):
                 answer(text, channel, BASH, record)
             elif output['type'] == u'message' and output['text'][0]==u'!':
                 if output['type'] == u'message' and output['text'].split()[0] ==u'!weather':
-                    place = output['text'].split()[1]
+                    place = ' '.join(output['text'].split()[1:])
                     text = compute_weather(place)
                     answer(text, channel, BASH, record)
                 elif output['type'] == u'message' and output['text'].split()[0] ==u'!entities':
                     text = parse_entities(unicode(' '.join(output['text'].split()[1:])))
+                    answer(text, channel, BASH, record)
+                elif output['type'] == u'message' and output['text'].split()[0] ==u'!velib':
+                    place = ' '.join(output['text'].split()[1:])
+                    text = available_velibs(place)
                     answer(text, channel, BASH, record)
                 else:
                     talking_user = slack_client.api_call("users.info", user=output['user'])['user']['profile']['first_name']

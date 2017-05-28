@@ -10,10 +10,10 @@
 
 * [x] Say hello when arriving to channel 
 * [x] Say hello when somebody arrives/leaves
-* [x] Dectection when somebody is writting
+* [x] Detection when somebody is writing
 * [x] Entity recognition in a phrase.
 * [x] Weather description for one city
-* [ ] Send images
+* [x] Check available velibs around a given address
 
 ## Biblio
 
