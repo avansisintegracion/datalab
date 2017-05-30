@@ -1,4 +1,7 @@
 # coding: utf-8
+import sys
+reload(sys)
+sys.setdefaultencoding('utf8')
 
 import os
 import pandas as pd
@@ -10,6 +13,12 @@ import pyowm
 owm = pyowm.OWM('7491e475f58f9fab017349742ee03997')  
 import spacy
 nlp = spacy.load('en')
+
+# Fix Python 2.x.
+try: 
+    input = raw_input
+except NameError: 
+    pass
 
 def compute_weather(place):
     """
@@ -46,6 +55,16 @@ def ask_reward():
         reward = -1
     return reward
 
+def ask_reward_slack(text, channel):
+    reward = None
+    text='is my answer OK ?'
+    slack_client.api_call("chat.postMessage", channel=channel, text=text)
+    #input_user = input('is my answer OK ?')
+    #if input_user == 'yes':
+    #    reward = 1
+    #elif input_user == 'no':
+    #    reward = -1
+    #return reward
 
 def answer_bash(text):
     """

@@ -47,6 +47,12 @@ def parse_slack_output(output_list):
     channel = "#testbot"
     if output_list and len(output_list) > 0:
         for output in output_list:
+            try:
+                talking_user = slack_client.api_call("users.info", user=output['user'])['user']['profile']['first_name']
+                msj = output['text']
+                print(talking_user, msj)
+            except:
+                pass
             if output['type'] == u'hello':
                 text = "I'm back"
                 answer(text, channel, BASH, record)
@@ -82,8 +88,7 @@ def parse_slack_output(output_list):
                     answer(text, channel, BASH, record)
             elif output['type'] == u'user_typing':
                 talking_user = slack_client.api_call("users.info", user=output['user'])['user']['profile']['first_name']
-                text = "I know you are writting " + talking_user
-                answer(text, channel, True, record)
+                print(talking_user, " is typing")
 
 
 
