@@ -10,8 +10,8 @@ from bot_functions import *
 # Slack
 BASH = False
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
-BOT_ID = os.environ.get("BOT_ID") # starterbot's ID as an environment variable
-AT_BOT = "<@" + BOT_ID + ">" # constants
+#BOT_ID = os.environ.get("BOT_ID") # starterbot's ID as an environment variable
+#AT_BOT = "<@" + BOT_ID + ">" # constants
 # Spacy
 nlp = spacy.load('en')
 # Python Open weather maps
@@ -72,10 +72,10 @@ def parse_slack_output(output_list):
                     talking_user = slack_client.api_call("users.info", user=output['user'])['user']['profile']['first_name']
                     text = "i know you are talking to me" + talking_user
                     answer(text, channel, BASH, record)
-            elif output['type'] == u'user_typing':
-                talking_user = slack_client.api_call("users.info", user=output['user'])['user']['profile']['first_name']
-                text = "I know you are writting " + talking_user
-                answer(text, channel, BASH, record)
+            #elif output['type'] == u'user_typing':
+            #    talking_user = slack_client.api_call("users.info", user=output['user'])['user']['profile']['first_name']
+            #    text = "I know you are writting " + talking_user
+            #    answer(text, channel, BASH, record)
 
 
 
