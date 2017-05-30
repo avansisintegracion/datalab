@@ -8,7 +8,7 @@ from pymongo import MongoClient
 from bot_functions import *
 
 # Slack
-BASH = False
+BASH = True
 slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
 #BOT_ID = os.environ.get("BOT_ID") # starterbot's ID as an environment variable
 #AT_BOT = "<@" + BOT_ID + ">" # constants
@@ -32,6 +32,11 @@ record = {
         "reward": 0
     }
 }
+# Fix Python 2.x.
+try: 
+    input = raw_input
+except NameError: 
+    pass
 
 def parse_slack_output(output_list):
     """
@@ -59,7 +64,10 @@ def parse_slack_output(output_list):
             elif output['type'] == u'message' and output['text'][0]==u'!':
                 if output['type'] == u'message' and output['text'].split()[0] ==u'!weather':
                     place = ' '.join(output['text'].split()[1:])
-                    text = compute_weather(place)
+                    try: 
+                        text = compute_weather(place)
+                    except:
+                        text = "I don't know where is " + place
                     answer(text, channel, BASH, record)
                 elif output['type'] == u'message' and output['text'].split()[0] ==u'!entities':
                     text = parse_entities(unicode(' '.join(output['text'].split()[1:])))
@@ -72,17 +80,17 @@ def parse_slack_output(output_list):
                     talking_user = slack_client.api_call("users.info", user=output['user'])['user']['profile']['first_name']
                     text = "i know you are talking to me" + talking_user
                     answer(text, channel, BASH, record)
-            #elif output['type'] == u'user_typing':
-            #    talking_user = slack_client.api_call("users.info", user=output['user'])['user']['profile']['first_name']
-            #    text = "I know you are writting " + talking_user
-            #    answer(text, channel, BASH, record)
+            elif output['type'] == u'user_typing':
+                talking_user = slack_client.api_call("users.info", user=output['user'])['user']['profile']['first_name']
+                text = "I know you are writting " + talking_user
+                answer(text, channel, True, record)
 
 
 
 if __name__ == "__main__":
     if BASH == True:
         while True:
-            input_user = raw_input('Hello, I am listening... \n')
+            input_user = input('Hello, I am listening... \n')
             record['input']['request'] = input_user
             input_chatbot = [{'type' : u'message', 'text': input_user}]
             parse_slack_output(input_chatbot)

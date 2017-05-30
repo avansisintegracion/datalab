@@ -1,7 +1,4 @@
-# encoding=utf8
-import sys
-reload(sys)
-sys.setdefaultencoding('utf8')
+# coding: utf-8
 
 import os
 import pandas as pd
@@ -42,7 +39,7 @@ def memorize(record):
 
 def ask_reward():
     reward = None
-    input_user = raw_input('is my answer OK ?')
+    input_user = input('is my answer OK ?')
     if input_user == 'yes':
         reward = 1
     elif input_user == 'no':
