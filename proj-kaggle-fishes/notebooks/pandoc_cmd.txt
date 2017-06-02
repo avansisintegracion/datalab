@@ -1,0 +1,1 @@
+pandoc --highlight-style=kate -s --self-contained -o A\ fish\ tale\ into\ data\ science\ \(I\).html --css=pandoc.css A\ fish\ tale\ into\ data\ science\ \(I\).md

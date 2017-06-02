@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with matplotlib (http://matplotlib.org/) -->
+
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   height="314.05783pt"
+   version="1.1"
+   viewBox="0 0 487.85897 314.05783"
+   width="487.85895pt"
+   id="svg2"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="Distribution.svg">
+  <metadata
+     id="metadata238">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+        <dc:title></dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1440"
+     inkscape:window-height="851"
+     id="namedview236"
+     showgrid="false"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     inkscape:zoom="1.2361274"
+     inkscape:cx="267.40956"
+     inkscape:cy="210.77078"
+     inkscape:window-x="0"
+     inkscape:window-y="1"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg2"
+     fit-margin-top="3"
+     fit-margin-left="3"
+     fit-margin-right="3"
+     fit-margin-bottom="3" />
+  <defs
+     id="defs4"
+     style="stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100000">
+    <style
+       type="text/css"
+       id="style6">
+*{stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100000;}
+  </style>
+  </defs>
+  <g
+     id="patch_2"
+     style="stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100000"
+     transform="matrix(0.79313045,0,0,0.79313045,-21.037713,-30.866685)">
+    <path
+       d="m 296.76673,43.200003 c -36.2562,0 -71.31996,13.096231 -98.69901,36.863846 -27.37905,23.767611 -45.27244,56.643211 -50.3671,92.539681 -5.09466,35.89647 2.94453,72.45259 22.62907,102.89978 19.68454,30.44718 49.7196,52.78265 84.54402,62.87087 l 41.89302,-144.61422 0,-150.559957 z"
+       style="fill:#88ccee;stroke:#ffffff;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:100000;stroke-opacity:1"
+       id="path14"
+       inkscape:connector-curvature="0" />
+  </g>
+  <g
+     id="patch_3"
+     style="stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100000"
+     transform="matrix(0.79313045,0,0,0.79313045,-21.037713,-30.866685)">
+    <path
+       d="m 254.87371,338.37418 c 8.02366,2.32437 16.22687,3.97693 24.52466,4.94058 8.29778,0.96366 16.66139,1.23506 25.00419,0.8114 l -7.63583,-150.3662 -41.89302,144.61422 z"
+       style="fill:#cc6677;stroke:#ffffff;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:100000;stroke-opacity:1"
+       id="path17"
+       inkscape:connector-curvature="0" />
+  </g>
+  <g
+     id="patch_4"
+     style="stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100000"
+     transform="matrix(0.79313045,0,0,0.79313045,-21.037713,-30.866685)">
+    <path
+       d="m 311.0655,388.8 c 4.8787,-0.24775 9.74244,-0.73279 14.57398,-1.45339 4.83153,-0.72061 9.62514,-1.67593 14.3638,-2.86257 L 303.42967,238.4338 311.0655,388.8 Z"
+       style="fill:#44aa99;stroke:#ffffff;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:100000;stroke-opacity:1"
+       id="path20"
+       inkscape:connector-curvature="0" />
+  </g>
+  <g
+     id="patch_5"
+     style="stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100000"
+     transform="matrix(0.79313045,0,0,0.79313045,-21.037713,-30.866685)">
+    <path
+       d="m 346.73587,382.9461 c 2.71323,-0.67944 5.407,-1.43436 8.07818,-2.26387 2.67117,-0.82951 5.31871,-1.7333 7.93953,-2.71031 L 310.16226,236.89587 346.73587,382.9461 Z"
+       style="fill:#ddcc77;stroke:#ffffff;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:100000;stroke-opacity:1"
+       id="path23"
+       inkscape:connector-curvature="0" />
+  </g>
+  <g
+     id="patch_6"
+     style="stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100000"
+     transform="matrix(0.79313045,0,0,0.79313045,-21.037713,-30.866685)">
+    <path
+       d="m 349.35805,334.83601 c 18.24462,-6.80136 34.99781,-17.07779 49.32924,-30.25864 14.33143,-13.18085 25.9708,-29.01751 34.27175,-46.63054 l -136.19231,-64.18687 52.59132,141.07605 z"
+       style="fill:#332288;stroke:#ffffff;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:100000;stroke-opacity:1"
+       id="path26"
+       inkscape:connector-curvature="0" />
+  </g>
+  <g
+     id="patch_7"
+     style="stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100000"
+     transform="matrix(0.79313045,0,0,0.79313045,-21.037713,-30.866685)">
+    <path
+       d="m 432.95904,257.94683 c 5.32792,-11.30482 9.22761,-23.22917 11.609,-35.49762 2.38139,-12.26844 3.226,-24.7858 2.51433,-37.26296 l -150.31564,8.57371 136.19231,64.18687 z"
+       style="fill:#882255;stroke:#ffffff;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:100000;stroke-opacity:1"
+       id="path29"
+       inkscape:connector-curvature="0" />
+  </g>
+  <g
+     id="patch_8"
+     style="stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100000"
+     transform="matrix(0.79313045,0,0,0.79313045,-21.037713,-30.866685)">
+    <path
+       d="m 447.08237,185.18625 c -0.41856,-7.33824 -1.37393,-14.63599 -2.85843,-21.83469 -1.4845,-7.1987 -3.49417,-14.27904 -6.01286,-21.1842 l -141.44435,51.5926 150.31564,-8.57371 z"
+       style="fill:#117733;stroke:#ffffff;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:100000;stroke-opacity:1"
+       id="path32"
+       inkscape:connector-curvature="0" />
+  </g>
+  <g
+     id="patch_9"
+     style="stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100000"
+     transform="matrix(0.79313045,0,0,0.79313045,-21.037713,-30.866685)">
+    <path
+       d="M 438.21108,142.16736 C 427.63083,113.16094 408.37971,88.099388 383.08161,70.398535 357.78352,52.697682 327.6425,43.2 296.76671,43.200003 l 2e-5,150.559957 141.44435,-51.5926 z"
+       style="fill:#aa4499;stroke:#ffffff;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:100000;stroke-opacity:1"
+       id="path35"
+       inkscape:connector-curvature="0" />
+  </g>
+  <g
+     id="matplotlib.axis_1"
+     style="stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100000"
+     transform="translate(-126.57211,-117.53233)" />
+  <g
+     id="matplotlib.axis_2"
+     style="stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100000"
+     transform="translate(-126.57211,-117.53233)" />
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12px;font-family:Lato;-inkscape-font-specification:'Lato Bold';text-align:center;text-anchor:middle;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-dashoffset:0.97660816;stroke-opacity:1"
+     x="39.760311"
+     y="117.37057"
+     id="text4270"><tspan
+       sodipodi:role="line"
+       id="tspan4272"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Lato;-inkscape-font-specification:Lato;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-opacity:1"
+       x="39.760311"
+       y="117.37057">Albacore tuna</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12px;font-family:Lato;-inkscape-font-specification:'Lato Bold';text-align:center;text-anchor:middle;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-dashoffset:0.97660816;stroke-opacity:1"
+     x="50.569843"
+     y="131.44931"
+     id="text4270-9"><tspan
+       sodipodi:role="line"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Lato;-inkscape-font-specification:Lato;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-opacity:1"
+       x="50.569843"
+       y="131.44931"
+       id="tspan4312">(46%)</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12px;font-family:Lato;-inkscape-font-specification:'Lato Bold';text-align:center;text-anchor:middle;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-dashoffset:0.97660816;stroke-opacity:1"
+     x="324.8316"
+     y="14.116185"
+     id="text4270-8"><tspan
+       sodipodi:role="line"
+       id="tspan4272-7"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Lato;-inkscape-font-specification:Lato;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-opacity:1"
+       x="324.8316"
+       y="14.116185">Yellowfin tuna</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12px;font-family:Lato;-inkscape-font-specification:'Lato Bold';text-align:center;text-anchor:middle;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-dashoffset:0.97660816;stroke-opacity:1"
+     x="338.21234"
+     y="27.853374"
+     id="text4270-9-7"><tspan
+       sodipodi:role="line"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Lato;-inkscape-font-specification:Lato;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-opacity:1"
+       x="338.21234"
+       y="27.853374"
+       id="tspan4312-3">(19%)</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12px;font-family:Lato;-inkscape-font-specification:'Lato Bold';text-align:center;text-anchor:middle;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-dashoffset:0.97660816;stroke-opacity:1"
+     x="414.14877"
+     y="90.106255"
+     id="text4270-8-1"><tspan
+       sodipodi:role="line"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Lato;-inkscape-font-specification:Lato;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-opacity:1"
+       x="414.14877"
+       y="90.106255"
+       id="tspan4388">Shark (Silky, Shortfin Mako)</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12px;font-family:Lato;-inkscape-font-specification:'Lato Bold';text-align:center;text-anchor:middle;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-dashoffset:0.97660816;stroke-opacity:1"
+     x="462.83835"
+     y="104.18501"
+     id="text4270-9-7-3"><tspan
+       sodipodi:role="line"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Lato;-inkscape-font-specification:Lato;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-opacity:1"
+       x="462.83835"
+       y="104.18501"
+       id="tspan4312-3-9">(5%)</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12px;font-family:Lato;-inkscape-font-specification:'Lato Bold';text-align:center;text-anchor:middle;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-dashoffset:0.97660816;stroke-opacity:1"
+     x="361.19461"
+     y="147.7959"
+     id="text4270-8-1-0"><tspan
+       sodipodi:role="line"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Lato;-inkscape-font-specification:Lato;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-opacity:1"
+       x="361.19461"
+       y="147.7959"
+       id="tspan4388-5">Other</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12px;font-family:Lato;-inkscape-font-specification:'Lato Bold';text-align:center;text-anchor:middle;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-dashoffset:0.97660816;stroke-opacity:1"
+     x="357.08398"
+     y="161.87463"
+     id="text4270-9-7-3-0"><tspan
+       sodipodi:role="line"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Lato;-inkscape-font-specification:Lato;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-opacity:1"
+       x="357.08398"
+       y="161.87463"
+       id="tspan4312-3-9-7">(8%)</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12px;font-family:Lato;-inkscape-font-specification:'Lato Bold';text-align:center;text-anchor:middle;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-dashoffset:0.97660816;stroke-opacity:1"
+     x="334.62067"
+     y="220.18993"
+     id="text4270-8-1-0-3"><tspan
+       sodipodi:role="line"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Lato;-inkscape-font-specification:Lato;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-opacity:1"
+       x="334.62067"
+       y="220.18993"
+       id="tspan4388-5-5">No Fish</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12px;font-family:Lato;-inkscape-font-specification:'Lato Bold';text-align:center;text-anchor:middle;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-dashoffset:0.97660816;stroke-opacity:1"
+     x="332.11005"
+     y="232.66866"
+     id="text4270-9-7-3-0-7"><tspan
+       sodipodi:role="line"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Lato;-inkscape-font-specification:Lato;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-opacity:1"
+       x="332.11005"
+       y="232.66866"
+       id="tspan4312-3-9-7-8">(12%)</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12px;font-family:Lato;-inkscape-font-specification:'Lato Bold';text-align:center;text-anchor:middle;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-dashoffset:0.97660816;stroke-opacity:1"
+     x="167.56622"
+     y="264.84552"
+     id="text4270-5"><tspan
+       sodipodi:role="line"
+       id="tspan4272-0"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Lato;-inkscape-font-specification:Lato;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-opacity:1"
+       x="167.56622"
+       y="264.84552">Bigeye tuna</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12px;font-family:Lato;-inkscape-font-specification:'Lato Bold';text-align:center;text-anchor:middle;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-dashoffset:0.97660816;stroke-opacity:1"
+     x="178.37572"
+     y="278.92426"
+     id="text4270-9-8"><tspan
+       sodipodi:role="line"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Lato;-inkscape-font-specification:Lato;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-opacity:1"
+       x="178.37572"
+       y="278.92426"
+       id="tspan4312-9">(5%)</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12px;font-family:Lato;-inkscape-font-specification:'Lato Bold';text-align:center;text-anchor:middle;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-dashoffset:0.97660816;stroke-opacity:1"
+     x="215.14839"
+     y="298.42111"
+     id="text4270-5-4"><tspan
+       sodipodi:role="line"
+       id="tspan4272-0-6"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Lato;-inkscape-font-specification:Lato;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-opacity:1"
+       x="215.14839"
+       y="298.42111">Dolphinfish</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12px;font-family:Lato;-inkscape-font-specification:'Lato Bold';text-align:center;text-anchor:middle;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-dashoffset:0.97660816;stroke-opacity:1"
+     x="225.95787"
+     y="312.49985"
+     id="text4270-9-8-5"><tspan
+       sodipodi:role="line"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Lato;-inkscape-font-specification:Lato;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-opacity:1"
+       x="225.95787"
+       y="312.49985"
+       id="tspan4312-9-4">(3%)</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12px;font-family:Lato;-inkscape-font-specification:'Lato Bold';text-align:center;text-anchor:middle;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-dashoffset:0.97660816;stroke-opacity:1"
+     x="288.61005"
+     y="288.75534"
+     id="text4270-5-4-0"><tspan
+       sodipodi:role="line"
+       id="tspan4272-0-6-6"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Lato;-inkscape-font-specification:Lato;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-opacity:1"
+       x="288.61005"
+       y="288.75534">Moonfish</tspan></text>
+  <text
+     xml:space="preserve"
+     style="font-style:normal;font-variant:normal;font-weight:bold;font-stretch:normal;font-size:12px;font-family:Lato;-inkscape-font-specification:'Lato Bold';text-align:center;text-anchor:middle;opacity:1;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-dashoffset:0.97660816;stroke-opacity:1"
+     x="291.41949"
+     y="302.83408"
+     id="text4270-9-8-5-0"><tspan
+       sodipodi:role="line"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:Lato;-inkscape-font-specification:Lato;fill:#000000;fill-opacity:1;stroke:none;stroke-width:0.87199998;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-opacity:1"
+       x="291.41949"
+       y="302.83408"
+       id="tspan4312-9-4-1">(2%)</tspan></text>
+</svg>
