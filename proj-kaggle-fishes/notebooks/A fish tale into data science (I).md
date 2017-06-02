@@ -18,7 +18,7 @@ The [NDA](https://kaggle2.blob.core.windows.net/competitions/kaggle/5568/media/C
  
 <embed type="image/svg+xml" src="img/Distribution.svg" />
 
-Figure 1. Fish species proportions in the training dataset.
+Figure 1. Fish species proportions in the training dataset (3777 images).
  
 Beyond this generic description, we also noticed elements that reflect pictures quality and shooting conditions. For instance, the pictures are taken from movie cameras on boats, this means that some shots are actually successive images from one scene. Quite a few fishes were also partially hidden behind fishermen legs or boat elements. We then noticed different fish characteristics : the sharks have fins with very characteristic shapes, Yellowfin tuna have colored fins (yes, yellow) and so on for all of them. An exception is made for Albacore and Big eye tunas that have very little difference. The length of their side fins seems to vary (thank you [wikipedia](https://en.wikipedia.org/wiki/Yellowfin_tuna)) but when we looked at the pictures we had, this was not something really visible systematically.
  
