@@ -15,7 +15,10 @@
    width="487.85895pt"
    id="svg2"
    inkscape:version="0.91 r13725"
-   sodipodi:docname="Distribution.svg">
+   sodipodi:docname="Distribution.svg"
+   inkscape:export-filename="/Users/mkoutero/Documents/Github/datalab/proj-kaggle-fishes/notebooks/img/figures_jb/figure1.png"
+   inkscape:export-xdpi="300"
+   inkscape:export-ydpi="300">
   <metadata
      id="metadata238">
     <rdf:RDF>
@@ -24,7 +27,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -44,8 +47,8 @@
      showguides="true"
      inkscape:guide-bbox="true"
      inkscape:zoom="1.2361274"
-     inkscape:cx="267.40956"
-     inkscape:cy="210.77078"
+     inkscape:cx="332.12781"
+     inkscape:cy="243.1299"
      inkscape:window-x="0"
      inkscape:window-y="1"
      inkscape:window-maximized="1"
@@ -63,6 +66,14 @@
 *{stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100000;}
   </style>
   </defs>
+  <rect
+     style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:2.37040019;stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100;stroke-dasharray:none;stroke-dashoffset:0.97660816;stroke-opacity:1"
+     id="rect3383"
+     width="487.97565"
+     height="315.82507"
+     x="0"
+     y="-0.47286814"
+     ry="2.3394482" />
   <g
      id="patch_2"
      style="stroke-linecap:butt;stroke-linejoin:round;stroke-miterlimit:100000"
