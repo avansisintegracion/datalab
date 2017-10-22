@@ -2,9 +2,9 @@
 
 ## Usage
 
-* It needs the Slack bot token for the channel
+* To test in local it _BASH_ flag in `startbot.py` should be _True_
 
-* Initialization with script `startbot.py`
+* Initializate with  `python startbot.py`
 
 # Changelog
 
@@ -14,6 +14,8 @@
 * [x] Entity recognition in a phrase.
 * [x] Weather description for one city
 * [x] Check available velibs around a given address
+* [x] Memory of the bot in _BASH_ mode
+* [ ] Memory of the bot in _SLACK_ mode
 
 ## Biblio
 
@@ -21,4 +23,6 @@
 
 * [Spacy entity recognition](https://spacy.io/docs/usage/entity-recognition)
 
+* [Limbo functions for slack bot](https://github.com/llimllib/limbo)
 
+* [Conversational bot module](https://github.com/gunthercox/ChatterBot)
