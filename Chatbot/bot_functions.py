@@ -1,20 +1,18 @@
 # coding: utf-8
 import sys
-reload(sys)
-sys.setdefaultencoding('utf8')
-
 import os
+import time
+import json
+import requests
 import pandas as pd
 import numpy as np
-import requests
-import time
 from slackclient import SlackClient
-slack_client = SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
-# NLP Spacy
+from chatterbot import ChatBot
 import spacy
-nlp = spacy.load('en')
-# Mongo 
 from pymongo import MongoClient
+reload(sys)
+sys.setdefaultencoding('utf8')
+nlp = spacy.load('en')
 client = MongoClient('localhost', 27007)
 db = client.chatbot
 collection = db.botmemory
@@ -24,6 +22,36 @@ try:
     input = raw_input
 except NameError: 
     pass
+
+# Chatterbot
+def initialize_chatterbot():
+    """
+    Initialize and train chatterbot function
+    @output: bot (chatterbot entity)
+    """
+    bot = ChatBot(
+    "Terminal",
+    logic_adapters=[
+        {
+            'import_path': 'chatterbot.logic.BestMatch',
+            'response_selection_method': 'chatterbot.response_selection.get_random_response'
+        },
+        {
+            'import_path': 'chatterbot.logic.MathematicalEvaluation'
+        }
+    ],
+    trainer='chatterbot.trainers.ChatterBotCorpusTrainer',
+    )
+    # Train based on the english corpus
+    bot.train("chatterbot.corpus.english")
+    #bot.train("chatterbot.corpus.english.greetings")
+    return bot
+
+def chatterbot_get_response(bot, input_text):
+    """ 
+    Answer from chatterbot corpus
+    """
+    return str(bot.get_response(input_text))
 
 def clean_record():
     record = {
@@ -41,9 +69,7 @@ def clean_record():
     return record
 
 def compute_weather(place):
-    """
-    Compute the weather (temperature and status)
-    using a given location
+    """ Compute the weather (temperature and status) using a given location
 
     arg:
         place: str 
@@ -84,26 +110,44 @@ def compute_weather(place):
     return " ".join(msg)
 
 
-def memorize(record):
-    record["date"] = time.strftime('%m/%d-%H:%M')
-    #record_id = collection.insert_one(record).inserted_id
+def read_slack(slack_client):
+    """ Read messages from Real Time Messaging app
+
+    args: 
+        slack_client (): Slack client to use API
+    """
+    return slack_client.rtm_read()
+
+def connect_slack():
+    """ Connect to slack app using token
+
+    returns: 
+        Slack client object with token
+    """
+    return SlackClient(os.environ.get('SLACK_BOT_TOKEN'))
+
+def memorize(record, question, question_answer):
+    """ Add record to memory db
+    args:
+        record (dict): Record with feedback
+    """
+    record["date"] = time.strftime('%d/%m/%Y-%H:%M')
+    record["input"]["request"] = question
+    record["output"]["text"] = question_answer
     collection.insert(record)
-    #return record_id
 
-
-def ask_reward():
+def ask_reward(slack_client_token, question, question_answer, channel, BASH, record):
+    """ Ask for reward
+    returns:
+        reward (int): 1 or -1 for good or bad reward
+    TODO: Ask reward? multi conversations collition?
+    """
     reward = None
-    input_user = input('is my answer OK ?')
-    if input_user == 'yes':
-        reward = 1
-    elif input_user == 'no':
-        reward = -1
-    return reward
-
-def ask_reward_slack(text, channel):
-    reward = None
-    text='is my answer OK ?'
-    slack_client.api_call("chat.postMessage", channel=channel, text=text)
+    text = 'is my answer OK?'
+    answer(slack_client_token, text, channel, BASH)
+    ## ask reward ???,
+    record['feedback']['reward'] = reward
+    memorize(record, question, question_answer)
     #input_user = input('is my answer OK ?')
     #if input_user == 'yes':
     #    reward = 1
@@ -111,34 +155,31 @@ def ask_reward_slack(text, channel):
     #    reward = -1
     #return reward
 
-def answer(text, channel, BASH, record):
+def answer(slack_client_token, text, channel, BASH):
     """
     decide what to do with the answer depending on the mode of the bot
     """
     if BASH == True:
-        record['output']['text'] = str(text)
+        #record['output']['text'] = str(text)
         answer_bash(text)
-        reward = ask_reward()
-        record['feedback']['reward'] = reward
-        print(record)
-        if reward:
-            memorize(record)
+        #reward = ask_reward()
+        #record['feedback']['reward'] = reward
+        #print(record)
+        #if reward:
+        #    memorize(record)
     else:
-        answer_slack(text, channel)
+        answer_slack(slack_client_token, text, channel)
 
 def answer_bash(text):
-    """
-    send the answer to the command line
+    """ send the answer to the command line
     """
     print(text)
 
 
-def answer_slack(text, channel):
-    """
-    send the answer to slack 
+def answer_slack(slack_client, text, channel):
+    """ send the answer to slack 
     """
     slack_client.api_call("chat.postMessage", channel=channel, text=text)
-
 
 def parse_entities(command):
     """
@@ -178,3 +219,16 @@ def available_velibs(command):
         resp = resp + status_stand +  str(row['address']) + ', there are ' + str(row['available_bikes']) + ' :bike: and ' + str(row['available_bike_stands']) + ' :parking:\n'
     #resp = np.array_str(subdf[["name","address","available_bikes"]].values)
     return resp
+
+def get_bot_id():
+    """
+    Get bot id
+    """
+    #BOT_ID = os.environ.get("BOT_ID") # starterbot's ID as an environment variable
+    #AT_BOT = "<@" + BOT_ID + ">" # constants
+    return os.environ.get("BOT_ID")
+
+
+def list_channels(slack_client):
+    #print(json.dumps(slack_client.api_call("im.list"), indent=2, sort_keys=True))
+    print(json.dumps(slack_client.api_call("channels.list"), indent=2, sort_keys=True))

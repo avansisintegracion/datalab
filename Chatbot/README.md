@@ -6,6 +6,10 @@
 
 * Initializate with  `python startbot.py`
 
+* Initialize mongo deamon to save rewards:
+
+`mongod --dbpath data --port 27007`
+
 # Changelog
 
 * [x] Say hello when arriving to channel 
@@ -14,8 +18,10 @@
 * [x] Entity recognition in a phrase.
 * [x] Weather description for one city
 * [x] Check available velibs around a given address
-* [x] Memory of the bot in _BASH_ mode
-* [ ] Memory of the bot in _SLACK_ mode
+* [x] Handles multiple channels output
+* [x] Ask reward in _BASH_ and _SLACK_ mode
+* [ ] Save reward ? collision multi conversational inputs 
+
 
 ## Biblio
 
@@ -26,3 +32,5 @@
 * [Limbo functions for slack bot](https://github.com/llimllib/limbo)
 
 * [Conversational bot module](https://github.com/gunthercox/ChatterBot)
+
+* [Slack api methods](https://api.slack.com/methods)
