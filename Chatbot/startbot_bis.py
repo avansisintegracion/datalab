@@ -21,7 +21,8 @@ def parse_slack_output(slack_client_token, output):
     """
     user_id = output['user'] if 'user' in output else None
     if user_id:
-        user_info = slack_client_token.api_call("users.info", user=user_id)['user']['profile']
+        user_info = slack_client_token.api_call("users.info", user=user_id)
+        user_info = user_info['user']['profile'] if 'user' in output else None
     else:
         user_info = None
     user_name = user_info['first_name'] if (user_info and 'first_name' in user_info) else None
@@ -77,12 +78,15 @@ def react_message(slack_client_token, message_info, record):
         pass
     ## General conversation
     elif message_info['message_type'] == u'message' and message_info['user_id']:
-        text = chatterbot_get_response(bot, message_info['message_content']) 
-        print('bot ans',text)
+        #text = chatterbot_get_response(bot, message_info['message_content']) 
+        #print('bot ans',text)
+        intent = rasa_get_response(interpreter, message_info['message_content'])
+        text = rasa_get_stories(intent)
         answer(slack_client_token, text,message_info['channel'], BASH)
 
 if __name__ == "__main__":
-    bot = initialize_chatterbot()
+    #bot = chatterbot_initialize()
+    interpreter = rasa_initialize('notebooks/default/model_20171216-165706/')
     BOT_ID = get_bot_id()
     if BASH == True:
         print('Hello I am listening')

@@ -10,6 +10,9 @@ from slackclient import SlackClient
 from chatterbot import ChatBot
 import spacy
 from pymongo import MongoClient
+from rasa_nlu.model import Trainer
+from rasa_nlu.config import RasaNLUConfig
+from rasa_nlu.model import Metadata, Interpreter
 reload(sys)
 sys.setdefaultencoding('utf8')
 nlp = spacy.load('en')
@@ -24,7 +27,7 @@ except NameError:
     pass
 
 # Chatterbot
-def initialize_chatterbot():
+def chatterbot_initialize():
     """
     Initialize and train chatterbot function
     @output: bot (chatterbot entity)
@@ -52,6 +55,22 @@ def chatterbot_get_response(bot, input_text):
     Answer from chatterbot corpus
     """
     return str(bot.get_response(input_text))
+
+def rasa_initialize(model_directory):
+    interpreter = Interpreter.load(model_directory, RasaNLUConfig("data/rasa/config_spacy.json"))
+    return interpreter
+
+def rasa_get_response(interpreter, input_text):
+    confidence, intent = interpreter.parse(input_text)['intent'].values()
+    return intent
+
+def rasa_get_stories(intent):
+    df = pd.read_csv('data/rasa/stories.csv', sep=';')
+    print('intent', intent)
+    if df['intent'].str.contains(intent).any():
+        return ''.join(df[df['intent'] == intent]['answer'].values)
+    else:
+        return 'Je ne sais pas'
 
 def clean_record():
     record = {

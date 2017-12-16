@@ -10,6 +10,16 @@
 
 `mongod --dbpath data --port 27007`
 
+## Rasa
+
+* [Training data](https://rasa-nlu.readthedocs.io/en/latest/dataformat.html) at `data/rasa/testData.json`
+
+* Training [config](https://rasa-nlu.readthedocs.io/en/latest/config.html) file at `data/rasa/config_spacy.json`
+
+* [Training stories](https://core.rasa.ai/stories.html) at `data/rasa/stories.csv`
+
+* Train the model using `rasa_train.py` the model will appear at `data/rasa/models/default/`
+
 # Changelog
 
 * [x] Say hello when arriving to channel 
@@ -20,6 +30,7 @@
 * [x] Check available velibs around a given address
 * [x] Handles multiple channels output
 * [x] Ask reward in _BASH_ and _SLACK_ mode
+* [x] Rasa Natural Language Understanding module
 * [ ] Save reward ? collision multi conversational inputs 
 
 
@@ -34,3 +45,5 @@
 * [Conversational bot module](https://github.com/gunthercox/ChatterBot)
 
 * [Slack api methods](https://api.slack.com/methods)
+
+* [Rasa training data creation](https://rasahq.github.io/rasa-nlu-trainer/)
