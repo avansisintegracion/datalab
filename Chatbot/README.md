@@ -8,7 +8,7 @@
 
 * Initialize mongo deamon to save rewards:
 
-`mongod --dbpath data --port 27007`
+`mongod --dbpath data/mongodb --port 27007`
 
 ## Rasa
 
