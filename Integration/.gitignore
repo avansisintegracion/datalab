@@ -1,0 +1,7 @@
+#Ingore file.. 
+liste_tache.txt
+note.txt
+*.pyc
+demo.txt
+*.log
+.DS_Strore
