@@ -18,10 +18,3 @@ class set_logger:
         self.log.setLevel(logging.INFO)
         self.log.addHandler(self.handler_info)
         return (self.log)
-
-        '''
-        self.log.info('INFO')
-        self.log.warning('Warning Error %s: %s', '01234', 'Erreur')
-        self.log.error('INFO')
-        self.log.critical('INFO')
-        '''
