@@ -56,14 +56,3 @@ if __name__ == "__main__":
     mongo_controle.close_mongo_database_connexion()
 
     sys.exit(0)
-
-
-
-
-
-
-
-
-
-
-
